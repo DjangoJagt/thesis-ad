@@ -10,6 +10,7 @@
 **/*.png
 **/*.bmp
 **/*.tiff
+*Zone.Identifier
 
 # ===========================
 # Ignore dataset creation images
