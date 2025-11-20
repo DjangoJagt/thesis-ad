@@ -1,0 +1,14 @@
+25-11-19 17:08:57.683 - INFO: image_size: 448
+25-11-19 17:08:57.684 - INFO: k_shot: 1
+25-11-19 17:08:57.684 - INFO: dataset: cognex
+25-11-19 17:08:57.684 - INFO: data_path: ./data/sick_data
+25-11-19 17:08:57.684 - INFO: save_path: ./results_test/
+25-11-19 17:08:57.684 - INFO: class_name: 10074656
+25-11-19 17:08:57.684 - INFO: round: 0
+25-11-19 17:08:57.684 - INFO: device: cpu
+25-11-19 17:08:57.685 - INFO: light: True
+25-11-19 17:08:57.685 - INFO: save_anomaly_maps: False
+25-11-19 17:08:57.685 - INFO: save_examples: True
+25-11-19 17:08:57.685 - INFO: disable_cfa: False
+25-11-19 17:08:57.685 - INFO: force_texture: True
+25-11-19 17:08:57.686 - INFO: num_images: -1

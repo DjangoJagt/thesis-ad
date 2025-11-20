@@ -1,0 +1,15 @@
+# Ignore dataset folders
+quality-issue/
+sick_data_staging/
+sick_data_issues/
+
+# Python cruft
+__pycache__/
+*.pyc
+
+# Cache folder
+cache/
+
+# macOS & Windows crap
+.DS_Store
+Thumbs.db

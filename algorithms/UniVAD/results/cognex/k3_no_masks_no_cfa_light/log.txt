@@ -1,0 +1,21 @@
+25-11-14 15:25:47.682 - INFO: image_size: 448
+25-11-14 15:25:47.683 - INFO: k_shot: 3
+25-11-14 15:25:47.683 - INFO: dataset: cognex
+25-11-14 15:25:47.683 - INFO: data_path: ./data/cognex_data
+25-11-14 15:25:47.683 - INFO: save_path: ./results/
+25-11-14 15:25:47.683 - INFO: class_name: Arla_Halfvolle_melk_lactofree_10760273
+25-11-14 15:25:47.683 - INFO: round: 0
+25-11-14 15:25:47.683 - INFO: device: cpu
+25-11-14 15:25:47.683 - INFO: light: True
+25-11-14 15:25:47.683 - INFO: save_anomaly_maps: False
+25-11-14 15:25:47.683 - INFO: save_examples: True
+25-11-14 15:25:47.683 - INFO: disable_cfa: False
+25-11-14 15:25:47.683 - INFO: force_texture: True
+25-11-14 15:25:47.683 - INFO: num_images: -1
+25-11-14 15:26:38.773 - INFO: Saved visualization plot: ./results//cognex/k3_no_masks_cfa_light/examples/Arla_Halfvolle_melk_lactofree_10760273/example_0.png
+25-11-14 15:26:46.659 - INFO: Saved visualization plot: ./results//cognex/k3_no_masks_cfa_light/examples/Arla_Halfvolle_melk_lactofree_10760273/example_1.png
+25-11-14 15:26:54.954 - INFO: Saved visualization plot: ./results//cognex/k3_no_masks_cfa_light/examples/Arla_Halfvolle_melk_lactofree_10760273/example_2.png
+25-11-14 15:26:54.960 - INFO: 
+| objects   |   auroc_sp |
+|:----------|-----------:|
+| mean      |        nan |

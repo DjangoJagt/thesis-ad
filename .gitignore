@@ -1,0 +1,50 @@
+# ===========================
+# Ignore datasets and images
+# ===========================
+# Any folder named "data" anywhere
+**/data/**
+
+# Ignore common image formats everywhere
+**/*.jpg
+**/*.jpeg
+**/*.png
+**/*.bmp
+**/*.tiff
+
+# ===========================
+# Ignore dataset creation images
+# ===========================
+dataset-creation/**/images/**
+dataset-creation/**/raw/**
+dataset-creation/**/output/**
+dataset-creation/Dataset-creation/Olivier_files/
+
+# ===========================
+# Ignore pretrained weights / checkpoints
+# ===========================
+**/*.pth
+**/*.pt
+**/*.ckpt
+**/*.bin
+**/pretrained_ckpt/**
+**/checkpoints/**
+**/weight/**
+
+# ===========================
+# Ignore Python cache
+# ===========================
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# ===========================
+# Jupyter notebook checkpoints
+# ===========================
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# ===========================
+# OS junk files
+# ===========================
+.DS_Store
+Thumbs.db

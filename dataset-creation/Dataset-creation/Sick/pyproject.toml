@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "sick-dataset-builder"
+version = "0.1.0"
+description = "Dataset builder for Sick Computer Vision anomaly detection"
+authors = ["Django Jagt <your.email@picnic.app>"]
+readme = "QUICKSTART.md"
+
+[tool.poetry.dependencies]
+python = "~=3.11.0"
+# Picnic internal tools
+picnic-tools = "==1.1.6"
+picnic-database = "^15.1.1"
+
+# Data processing
+pandas = "^2.2.3"
+numpy = "^2.2.3"
+pydantic = "^2.10.6"
+
+# Utilities
+tqdm = "^4.67.1"
+pillow = "^10.2.0"
+
+[tool.poetry.group.dev.dependencies]
+# Development tools (optional) - commenting out to avoid dependency issues
+# black = "^24.8.0"
+# flake8 = "^7.1.2"
+
+[[tool.poetry.source]]
+name = "picnic"
+url = "https://nexus.global.picnicinternational.com/repository/pypi-public/simple/"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "pypi"
+priority = "supplemental"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

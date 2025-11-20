@@ -1,0 +1,21 @@
+25-11-14 10:58:13.272 - INFO: image_size: 448
+25-11-14 10:58:13.272 - INFO: k_shot: 1
+25-11-14 10:58:13.272 - INFO: dataset: cognex
+25-11-14 10:58:13.272 - INFO: data_path: ./data/cognex_data
+25-11-14 10:58:13.272 - INFO: save_path: ./results/
+25-11-14 10:58:13.272 - INFO: class_name: Heemskerk_Zoete_aardappelblokjes_11463862
+25-11-14 10:58:13.272 - INFO: round: 0
+25-11-14 10:58:13.272 - INFO: device: cpu
+25-11-14 10:58:13.272 - INFO: light: True
+25-11-14 10:58:13.272 - INFO: save_anomaly_maps: False
+25-11-14 10:58:13.272 - INFO: save_examples: True
+25-11-14 10:58:13.272 - INFO: disable_cfa: False
+25-11-14 10:58:13.272 - INFO: num_images: -1
+25-11-14 10:59:16.708 - INFO: Saved visualization plot: ./results//cognex/examples/Heemskerk_Zoete_aardappelblokjes_11463862/example_0.png
+25-11-14 10:59:23.967 - INFO: Saved visualization plot: ./results//cognex/examples/Heemskerk_Zoete_aardappelblokjes_11463862/example_1.png
+25-11-14 10:59:31.001 - INFO: Saved visualization plot: ./results//cognex/examples/Heemskerk_Zoete_aardappelblokjes_11463862/example_2.png
+25-11-14 10:59:38.686 - INFO: Saved visualization plot: ./results//cognex/examples/Heemskerk_Zoete_aardappelblokjes_11463862/example_3.png
+25-11-14 10:59:43.848 - INFO: 
+| objects   |   auroc_sp |
+|:----------|-----------:|
+| mean      |        nan |

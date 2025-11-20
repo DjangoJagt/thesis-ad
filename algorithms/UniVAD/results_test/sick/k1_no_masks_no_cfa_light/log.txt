@@ -1,0 +1,19 @@
+25-11-19 17:17:07.419 - INFO: image_size: 448
+25-11-19 17:17:07.419 - INFO: k_shot: 1
+25-11-19 17:17:07.419 - INFO: dataset: sick
+25-11-19 17:17:07.419 - INFO: data_path: ./data/sick_data
+25-11-19 17:17:07.419 - INFO: save_path: ./results_test/
+25-11-19 17:17:07.419 - INFO: class_name: 10074656
+25-11-19 17:17:07.419 - INFO: round: 0
+25-11-19 17:17:07.420 - INFO: device: cpu
+25-11-19 17:17:07.420 - INFO: light: True
+25-11-19 17:17:07.420 - INFO: save_anomaly_maps: False
+25-11-19 17:17:07.420 - INFO: save_examples: True
+25-11-19 17:17:07.420 - INFO: disable_cfa: False
+25-11-19 17:17:07.420 - INFO: force_texture: True
+25-11-19 17:17:07.420 - INFO: num_images: -1
+25-11-19 17:18:00.639 - INFO: Saved visualization plot: ./results_test//sick/k1_no_masks_no_cfa_light/examples/10074656/example_0.png
+25-11-19 17:18:06.614 - INFO: Saved visualization plot: ./results_test//sick/k1_no_masks_no_cfa_light/examples/10074656/example_1.png
+25-11-19 17:18:11.951 - INFO: Saved visualization plot: ./results_test//sick/k1_no_masks_no_cfa_light/examples/10074656/example_2.png
+25-11-19 17:18:17.778 - INFO: Saved visualization plot: ./results_test//sick/k1_no_masks_no_cfa_light/examples/10074656/example_3.png
+25-11-19 17:18:23.861 - INFO: Saved visualization plot: ./results_test//sick/k1_no_masks_no_cfa_light/examples/10074656/example_4.png
