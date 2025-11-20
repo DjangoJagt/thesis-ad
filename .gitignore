@@ -1,51 +1,118 @@
-# ===========================
-# Ignore datasets and images
-# ===========================
-# Any folder named "data" anywhere
-**/data/**
+# ============================================
+# PYTHON
+# ============================================
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*$py.class
 
-# Ignore common image formats everywhere
+# ============================================
+# ENVIRONMENTS / DEVELOPMENT
+# ============================================
+.env
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+dev/
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# ============================================
+# JUPYTER
+# ============================================
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+*personal.ipynb
+feature_extraction.ipynb
+
+# ============================================
+# BUILD / PACKAGING
+# ============================================
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+wheels/
+share/python-wheels/
+*.egg-info/
+*.egg
+*.spec
+MANIFEST
+
+# ============================================
+# OS JUNK
+# ============================================
+.DS_Store
+Thumbs.db
+*Zone.Identifier
+
+# ============================================
+# DATASETS (NEVER IN REPO)
+# ============================================
+data/
+datasets/
+# Ignore only datasets named "data" inside algorithm folders
+algorithms/*/data/*
+
+# But DO NOT ignore model code directories named "data"
+!models/**/data/
+!*/models/**/data/
+**/*.csv
+**/*.npz
+**/*.npy
+**/*.pickle
+**/*.pkl
+**/*.h5
+**/*.hdf5
+**/*.tfrecord
+**/images/
+**/raw/
+**/output/
+dataset-creation/Dataset-creation/Olivier_files/
+dataset-creation/Dataset-creation/Cognex/
+quality-issue/
+sick_data_staging/
+sick_data_issues/
+
+# ============================================
+# IMAGES (DATA)
+# ============================================
 **/*.jpg
 **/*.jpeg
 **/*.png
 **/*.bmp
 **/*.tiff
-*Zone.Identifier
 
-# ===========================
-# Ignore dataset creation images
-# ===========================
-dataset-creation/**/images/**
-dataset-creation/**/raw/**
-dataset-creation/**/output/**
-dataset-creation/Dataset-creation/Olivier_files/
-
-# ===========================
-# Ignore pretrained weights / checkpoints
-# ===========================
-**/*.pth
+# ============================================
+# MODEL WEIGHTS & CHECKPOINTS
+# ============================================
 **/*.pt
+**/*.pth
 **/*.ckpt
 **/*.bin
-**/pretrained_ckpt/**
-**/checkpoints/**
-**/weight/**
+**/*.safetensors
+**/pretrained_ckpt/
+**/checkpoints/
+**/weight/
+weights/
 
-# ===========================
-# Ignore Python cache
-# ===========================
-__pycache__/
-**/__pycache__/
-*.pyc
-
-# ===========================
-# Jupyter notebook checkpoints
-# ===========================
-.ipynb_checkpoints/
-**/.ipynb_checkpoints/
-
-# ===========================
-# OS junk files
-# ===========================
-.DS_Store
-Thumbs.db
+# ============================================
+# EXPERIMENT OUTPUTS
+# ============================================
+runs/
+results/
+results*/
+paper_plots*/
+paper_tables*/
+cache/
