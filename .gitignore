@@ -62,12 +62,18 @@ Thumbs.db
 # ============================================
 data/
 datasets/
+
+# Keep the data folders themselves
+!algorithms/*/data/
+
 # Ignore only datasets named "data" inside algorithm folders
-algorithms/*/data/*
+algorithms/*/data/*/
+
+# Do NOT ignore Python files inside algorithm data folders
+!algorithms/*/data/*.py
 
 # But DO NOT ignore model code directories named "data"
-!models/**/data/
-!*/models/**/data/
+!**/models/**/data/
 **/*.csv
 **/*.npz
 **/*.npy
@@ -102,7 +108,7 @@ sick_data_issues/
 **/*.ckpt
 **/*.bin
 **/*.safetensors
-**/pretrained_ckpt/
+**/*.gguf
 **/checkpoints/
 **/weight/
 weights/
