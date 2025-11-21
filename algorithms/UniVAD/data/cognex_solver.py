@@ -3,7 +3,6 @@ import json
 
 
 class CognexSolver(object):
-    # All available Cognex product classes
     CLSNAMES = [
         "Arla_Halfvolle_melk_lactofree_10760273",
         "Elinas_Yoghurt_Griekse_stijl_aardbei_11400153",
@@ -46,20 +45,23 @@ class CognexSolver(object):
                         continue
                         
                     is_abnormal = True if specie not in ["good"] else False
-                    img_names = [f for f in os.listdir(specie_dir) if f.endswith(('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'))]
+                    img_names = [f for f in os.listdir(specie_dir) 
+                                if f.endswith(('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'))]
+                    mask_names = os.listdir(f"{cls_dir}/ground_truth/{specie}") if is_abnormal and os.path.exists(f"{cls_dir}/ground_truth/{specie}") else None
                     img_names.sort()
+                    mask_names.sort() if mask_names is not None else None
                     
-                    for img_name in img_names:
+                    for idx, img_name in enumerate(img_names):
                         info_img = dict(
                             img_path=f"{cls_name}/{phase}/{specie}/{img_name}",
-                            mask_path="",  # No pixel-level ground truth for Cognex data
+                            mask_path=f"{cls_name}/ground_truth/{specie}/{mask_names[idx]}" if is_abnormal and mask_names else "",
                             cls_name=cls_name,
                             specie_name=specie,
                             anomaly=1 if is_abnormal else 0,
                         )
                         cls_info.append(info_img)
                 
-                if cls_info:  # Only add if we found images
+                if cls_info:
                     info[phase][cls_name] = cls_info
                     
         with open(self.meta_path, "w") as f:
