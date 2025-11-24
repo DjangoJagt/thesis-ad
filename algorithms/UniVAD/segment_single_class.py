@@ -12,6 +12,8 @@ parser.add_argument("--class_name", type=str, default=None,
                     help="Specific class to process. If not provided, processes all classes in the dataset")
 parser.add_argument("--dataset_root", type=str, default=None,
                     help="Custom dataset root path (for cognex or custom datasets)")
+parser.add_argument("--mask_path", type=str, default=None,
+                    help="Base directory for output masks (e.g. /scratch/<user>/masks). If provided, masks will be saved under <mask_path>/<dataset>/<class>")
 parser.add_argument("--sam_variant", type=str, default=None,
                     help="SAM variant to use (vit_b, vit_h). If not set, uses config value or default vit_h")
 parser.add_argument("--sam_checkpoint", type=str, default=None,
@@ -156,7 +158,10 @@ if __name__ == "__main__":
         
         data_root = args.dataset_root
         dataset_name = os.path.basename(data_root.rstrip("/"))
-        mask_root = f"./masks/{dataset_name}"
+        if args.mask_path:
+            mask_root = os.path.join(args.mask_path, dataset_name)
+        else:
+            mask_root = f"./masks/{dataset_name}"
         
         if args.class_name:
             # Single class specified
@@ -178,7 +183,10 @@ if __name__ == "__main__":
         
         data_root = args.dataset_root
         dataset_name = os.path.basename(data_root.rstrip("/"))
-        mask_root = f"./masks/{dataset_name}"
+        if args.mask_path:
+            mask_root = os.path.join(args.mask_path, dataset_name)
+        else:
+            mask_root = f"./masks/{dataset_name}"
         
         if args.class_name:
             # Single class specified
@@ -196,21 +204,34 @@ if __name__ == "__main__":
     else:
         # Standard datasets
         dataset_config = DATASET_CONFIGS[args.dataset]
-        data_root = dataset_config["root"]
-        mask_root = dataset_config["mask_path"]
-        
+        dataset_name = args.dataset
+
+        if args.dataset_root:
+            data_root = args.dataset_root
+        else:
+            # Try DelftBlue scratch dataset location
+            scratch_candidate = f"/scratch/{os.environ.get('USER')}/datasets/{dataset_name}"
+            if os.path.isdir(scratch_candidate):
+                data_root = scratch_candidate
+            else:
+                # Fall back to repo default path
+                data_root = dataset_config["root"]
+
+        if args.mask_path:
+            mask_root = os.path.join(args.mask_path, dataset_name)
+        else:
+            mask_root = dataset_config["mask_path"]
+
         if args.class_name:
-            # Single class specified
             if args.class_name not in dataset_config["categories"]:
-                print(f"⚠️  Warning: '{args.class_name}' not in known categories for {args.dataset}")
-                print(f"Available categories: {', '.join(dataset_config['categories'])}")
-                print(f"Attempting to process anyway...")
+                print(f"⚠️ Warning: '{args.class_name}' is not a known class for {args.dataset}")
+                print(f"Known classes: {dataset_config['categories']}")
+                print("Attempting to process anyway...")
             categories = [args.class_name]
         else:
-            # All classes
             categories = dataset_config["categories"]
-        
-        process_dataset(args.dataset, categories, data_root, mask_root, 
-                       dataset_config["extensions"], args.phases)
+
+        process_dataset(dataset_name, categories, data_root, mask_root,
+                        dataset_config["extensions"], args.phases)
 
 print("\n✅ Mask generation complete!")

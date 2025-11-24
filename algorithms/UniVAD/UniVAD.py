@@ -86,12 +86,14 @@ def see_image(data, heatmap, savepath, heatmap_intra):
 
 class UniVAD(nn.Module):
 
-    def __init__(self, image_size=224, lightweight: bool = False, enable_cfa: bool = False, force_texture: bool = False) -> None:
+    def __init__(self, image_size=224, lightweight: bool = False, enable_cfa: bool = False, force_texture: bool = False, masks_path: str = "./masks", data_path: str = "./data") -> None:
         super().__init__()
         # lightweight mode reduces memory by using a smaller CLIP and skipping DINO/component-heavy pieces
         self.lightweight = lightweight
         self.enable_cfa = enable_cfa  # allow toggling CFA at runtime for testing
         self.force_texture = force_texture  # force TEXTURE mode even when masks available
+        self.masks_path = masks_path  # configurable masks directory path
+        self.data_path = data_path  # configurable data directory path
 
         clip_name = "ViT-L-14-336"
         if self.lightweight:
@@ -473,8 +475,17 @@ class UniVAD(nn.Module):
                     "pred_mask": anomaly_map_ret_all,
                 }
 
+        # Construct mask path using configurable paths
+        # Extract relative path from data_path
+        if self.data_path in image_path:
+            relative_path = image_path.replace(self.data_path, "").lstrip("/")
+        else:
+            # Fallback: try to split by '/data/'
+            parts = image_path.split('/data/')
+            relative_path = parts[-1] if len(parts) > 1 else image_path
+        
         query_sam_mask_path = (
-            ("./masks/" + image_path.split('/data/')[-1])
+            (f"{self.masks_path}/" + relative_path)
             .replace(".png", "/grounding_mask.png")
             .replace(".PNG", "/grounding_mask.png")
             .replace(".jpg", "/grounding_mask.png")

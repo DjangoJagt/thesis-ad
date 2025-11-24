@@ -95,6 +95,12 @@ if __name__ == "__main__":
         help="path to test dataset",
     )
     parser.add_argument(
+        "--masks_path",
+        type=str,
+        default="./masks",
+        help="path to component segmentation masks directory (e.g., /scratch/<netid>/masks)",
+    )
+    parser.add_argument(
         "--save_path", type=str, default=f"./results/", help="path to save results"
     )
     parser.add_argument(
@@ -113,7 +119,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save_examples",
         action="store_true",
-        help="Save 4-panel example plots (original, PCA+mask, patch-dist heatmap, histogram)",
+        help="Save 4-panel example plots (first 5 per class)",
+    )
+    parser.add_argument(
+        "--save_all_examples",
+        action="store_true",
+        help="Save 4-panel example plots for ALL images (overrides --save_examples limit)",
     )
     parser.add_argument(
         "--disable_cfa",
@@ -155,13 +166,13 @@ if __name__ == "__main__":
     if args.class_name != "None" and not args.force_texture:
         # Check if masks exist for this class
         if dataset_name == "mvtec":
-            mask_check_path = f"./masks/mvtec/{args.class_name}"
+            mask_check_path = f"{args.masks_path}/mvtec/{args.class_name}"
         elif dataset_name == "cognex":
-            mask_check_path = f"./masks/cognex_data/{args.class_name}"
+            mask_check_path = f"{args.masks_path}/cognex_data/{args.class_name}"
         elif dataset_name == "sick":
-            mask_check_path = f"./masks/sick_data/{args.class_name}"
+            mask_check_path = f"{args.masks_path}/sick_data/{args.class_name}"
         else:
-            mask_check_path = f"./masks/{dataset_name}/{args.class_name}"
+            mask_check_path = f"{args.masks_path}/{dataset_name}/{args.class_name}"
         
         if os.path.exists(mask_check_path):
             will_use_masks = True
@@ -220,7 +231,9 @@ if __name__ == "__main__":
         image_size=args.image_size,
         lightweight=args.light,
         enable_cfa=(not args.disable_cfa),
-        force_texture=args.force_texture
+        force_texture=args.force_texture,
+        masks_path=args.masks_path,
+        data_path=args.data_path
     ).to(device)
 
     # dataset
@@ -363,6 +376,7 @@ if __name__ == "__main__":
     results["anomaly_maps"] = []
     results["gt_sp"] = []
     results["pr_sp"] = []
+    results["csv_data"] = []  # For detailed CSV output
 
     cls_last = None
 
@@ -487,22 +501,39 @@ if __name__ == "__main__":
             results["anomaly_maps"].append(anomaly_map.detach().cpu().numpy())
             overall_anomaly_score = anomaly_score.item()
             results["pr_sp"].append(overall_anomaly_score)
+            
+            # Extract subfolder name and filename for CSV
+            path_parts = image_path.split('/')
+            subfolder_name = path_parts[-2] if len(path_parts) >= 2 else "unknown"
+            filename = os.path.basename(image_path)
 
             # Optionally save AnomalyDINO-style 4-panel visualization plots using UniVAD's native data
-            if args.save_examples:
+            example_saved = False
+            if args.save_examples or args.save_all_examples:
                 # Determine how many examples already saved for this class
-                examples_dir = os.path.join(save_path, "examples", cls_name)
+                examples_dir = os.path.join(save_path, cls_name, "examples")
                 os.makedirs(examples_dir, exist_ok=True)
                 existing = len([f for f in os.listdir(examples_dir) if f.endswith('.png')])
                 
-                if existing < 5:
-                    out_path = os.path.join(examples_dir, f"example_{existing}.png")
+                # Save if: save_all_examples OR (save_examples AND < 5 saved)
+                should_save = args.save_all_examples or (args.save_examples and existing < 5)
+                
+                if should_save:
+                    # Extract subfolder name (good/issue) and filename from image_path
+                    # Format: ./data/sick_data/90006036/test/good/20251114-22025384-90006036-16-31-02.png
+                    path_parts = image_path.split('/')
+                    subfolder_name = path_parts[-2] if len(path_parts) >= 2 else "unknown"  # good/issue
+                    filename = os.path.splitext(os.path.basename(image_path))[0]  # without extension
+                    
+                    out_filename = f"{subfolder_name}_{filename}.png"
+                    out_path = os.path.join(examples_dir, out_filename)
+                    example_saved = True
                     
                     # Show mask only when model used component-level features (gate not TEXTURE)
                     # This decouples visualization from CFA flag and respects --force_texture.
                     gate = getattr(UniVAD_model, "gate", None)
                     if gate is not None and gate.name != "TEXTURE":
-                        relative_path = image_path.replace("./data/", "")
+                        relative_path = image_path.replace(args.data_path, "").lstrip("/")
                         mask_dir = (relative_path
                                     .replace(".png", "")
                                     .replace(".PNG", "")
@@ -510,8 +541,17 @@ if __name__ == "__main__":
                                     .replace(".JPG", "")
                                     .replace(".jpeg", "")
                                     .replace(".JPEG", ""))
-                        mask_path_color = f"./masks/{mask_dir}/grounding_mask_color.png"
-                        mask_path_gray = f"./masks/{mask_dir}/grounding_mask.png"
+                        
+                        # Construct mask path using configurable masks_path
+                        if dataset_name == "sick":
+                            mask_base = f"{args.masks_path}/sick_data/{mask_dir}"
+                        elif dataset_name == "cognex":
+                            mask_base = f"{args.masks_path}/cognex_data/{mask_dir}"
+                        else:
+                            mask_base = f"{args.masks_path}/{dataset_name}/{mask_dir}"
+                        
+                        mask_path_color = f"{mask_base}/grounding_mask_color.png"
+                        mask_path_gray = f"{mask_base}/grounding_mask.png"
                         if os.path.exists(mask_path_color):
                             mask_path = mask_path_color
                         elif os.path.exists(mask_path_gray):
@@ -530,6 +570,20 @@ if __name__ == "__main__":
                         mask_image_path=mask_path
                     )
                     logger.info(f"Saved visualization plot: {out_path}")
+            
+            # Track in CSV: class_name, subfolder, filename, anomaly_score, gt_label, predicted_anomaly, example_saved
+            gt_label = items["anomaly"].item()
+            # Simple threshold: if score > mean of all scores so far, predict anomaly (will be refined at end)
+            # For now, just store the data and determine verdict later
+            results["csv_data"].append({
+                "class_name": cls_name,
+                "subfolder": subfolder_name,
+                "filename": filename,
+                "anomaly_score": overall_anomaly_score,
+                "gt_label": gt_label,
+                "example_saved": example_saved,
+                "anomaly_map_saved": False  # Will update later if --save_anomaly_maps used
+            })
 
     # metrics
     table_ls = []
@@ -548,22 +602,57 @@ if __name__ == "__main__":
 
     # Save anomaly maps as PNG if requested
     if args.save_anomaly_maps:
-        anomaly_maps_dir = os.path.join(save_path, "anomaly_maps")
-        os.makedirs(anomaly_maps_dir, exist_ok=True)
-        logger.info(f"Saving anomaly maps to {anomaly_maps_dir}")
+        logger.info(f"Saving anomaly maps")
         
         for img_idx, (cls_name, anomaly_map) in enumerate(
             zip(results["cls_names"], results["anomaly_maps"])
         ):
-            # Create subdirectory for each class
-            class_dir = os.path.join(anomaly_maps_dir, cls_name)
-            os.makedirs(class_dir, exist_ok=True)
+            # Create subdirectory: config/product/anomaly_maps/
+            anomaly_maps_dir = os.path.join(save_path, cls_name, "anomaly_maps")
+            os.makedirs(anomaly_maps_dir, exist_ok=True)
             
-            # Save anomaly map with index
-            map_path = os.path.join(class_dir, f"anomaly_map_{img_idx:04d}.png")
+            # Use subfolder_filename format from CSV data
+            csv_row = results["csv_data"][img_idx]
+            map_filename = f"{csv_row['subfolder']}_{os.path.splitext(csv_row['filename'])[0]}.png"
+            map_path = os.path.join(anomaly_maps_dir, map_filename)
             save_anomaly_map(anomaly_map, map_path)
+            
+            # Update CSV tracking
+            results["csv_data"][img_idx]["anomaly_map_saved"] = True
             logger.info(f"  Saved {map_path}")
 
+    # Save detailed results to CSV
+    import csv
+    csv_path = os.path.join(save_path, "detailed_results.csv")
+    
+    # Determine anomaly threshold per class using ground truth (for predicted_anomaly column)
+    # Simple approach: use median score of normal samples as threshold
+    class_thresholds = {}
+    for row in results["csv_data"]:
+        cls = row["class_name"]
+        if cls not in class_thresholds:
+            class_thresholds[cls] = []
+        if row["gt_label"] == 0:  # Normal samples
+            class_thresholds[cls].append(row["anomaly_score"])
+    
+    for cls in class_thresholds:
+        if len(class_thresholds[cls]) > 0:
+            class_thresholds[cls] = np.median(class_thresholds[cls]) + np.std(class_thresholds[cls])
+        else:
+            class_thresholds[cls] = 0.5  # Fallback
+    
+    with open(csv_path, 'w', newline='') as csvfile:
+        fieldnames = ['class_name', 'subfolder', 'filename', 'anomaly_score', 'gt_label', 'predicted_anomaly', 'example_saved', 'anomaly_map_saved']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        
+        for row in results["csv_data"]:
+            threshold = class_thresholds.get(row["class_name"], 0.5)
+            row["predicted_anomaly"] = 1 if row["anomaly_score"] > threshold else 0
+            writer.writerow(row)
+    
+    logger.info(f"Saved detailed results to {csv_path}")
+    
     # logger
     table_ls.append(
         [
@@ -571,7 +660,7 @@ if __name__ == "__main__":
             str(np.round(np.mean(auroc_sp_ls) * 100, decimals=1)),
         ]
     )
-    results = tabulate(
+    results_table = tabulate(
         table_ls,
         headers=[
             "objects",
@@ -579,4 +668,4 @@ if __name__ == "__main__":
         ],
         tablefmt="pipe",
     )
-    logger.info("\n%s", results)
+    logger.info("\n" + results_table)

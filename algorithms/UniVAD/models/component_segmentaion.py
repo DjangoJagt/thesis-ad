@@ -264,10 +264,38 @@ def grounding_segmentation(img_paths,save_path,config):
     text_threshold = config['text_threshold']
     text_prompt = config['text_prompt']
 
+    # -----------------------------
+    # Resolve GroundingDINO checkpoint path
+    # -----------------------------
+    repo_checkpoint = "./pretrained_ckpts/groundingdino_swint_ogc.pth"
+
+    # Try DelftBlue scratch
+    user = os.environ.get("USER", "")
+    scratch_checkpoint = f"/scratch/{user}/univad/pretrained_ckpts/groundingdino_swint_ogc.pth"
+
+    if os.path.isfile(repo_checkpoint):
+        grounding_ckpt = repo_checkpoint
+    elif os.path.isfile(scratch_checkpoint):
+        grounding_ckpt = scratch_checkpoint
+        print(f"📦 Using GroundingDINO checkpoint from scratch: {grounding_ckpt}")
+    else:
+        raise FileNotFoundError(
+            f"❌ Could not find GroundingDINO checkpoint.\n"
+            f"Tried:\n - {repo_checkpoint}\n - {scratch_checkpoint}\n"
+            f"Please copy it to your repo OR to {scratch_checkpoint}"
+        )
+
+    # Load GroundingDINO
+    model = load_model(
+        './models/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py',
+        grounding_ckpt,
+        device
+    )
+
     # model = load_model('./models/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py',
     #                    './pretrained_ckpts/groundingdino_swint_ogc.pth',"cuda")
-    model = load_model('./models/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py',
-                       './pretrained_ckpts/groundingdino_swint_ogc.pth', device)
+    # model = load_model('./models/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py',
+    #                    './pretrained_ckpts/groundingdino_swint_ogc.pth', device)
 
     # Allow choosing SAM variant and checkpoint via config
     sam_variant = config.get('sam_variant', 'vit_h')
