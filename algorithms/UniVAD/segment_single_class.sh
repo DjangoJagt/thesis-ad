@@ -71,6 +71,18 @@ source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate /scratch/${USER}/.conda/envs/univad
 
 # ========================================================================
+# SET OFFLINE MODE (CRITICAL FIX)
+# ========================================================================
+
+# 1. Point to the folder where we just downloaded the model
+export HF_HOME="/scratch/${USER}/.cache/huggingface"
+
+# 2. Tell transformers to NEVER try to connect to the internet
+# This forces it to look in HF_HOME. If it's missing, it will crash explicitly.
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+
+# ========================================================================
 # GPU Verification
 # ========================================================================
 
