@@ -64,6 +64,7 @@ echo "================================================="
 # Load Modules & Conda Environment
 # ========================================================================
 module purge
+module load slurm
 module load 2024r1
 module load miniconda3
 module load cuda/12.1
