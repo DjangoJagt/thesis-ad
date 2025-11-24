@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --gpus-per-task=1
 #SBATCH --mem-per-cpu=4G
-#SBATCH --account=Education-AE-MSc-AE
+#SBATCH --account=education-ae-msc-ae
 #SBATCH --output=/scratch/${USER}/univad/logs/masks_%j.out
 #SBATCH --error=/scratch/${USER}/univad/logs/masks_%j.err
 
