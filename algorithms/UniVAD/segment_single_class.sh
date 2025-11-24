@@ -63,22 +63,30 @@ echo "================================================="
 # ========================================================================
 # Load Modules & Conda Environment
 # ========================================================================
+module purge
+module load 2024r1
 module load miniconda3
+module load cuda/12.1
 
 unset CONDA_SHLVL
 source "$(conda info --base)/etc/profile.d/conda.sh"
-
 conda activate /scratch/${USER}/.conda/envs/univad
 
 # ========================================================================
-# OFFLINE HUGGINGFACE CONFIG (THE "SAFETY NET")
+# CRITICAL LIBRARY FIXES (For GroundingDINO C++ Ops)
 # ========================================================================
-# 1. Point ALL possible cache variables to the same scratch folder
+TORCH_LIB_PATH="${CONDA_PREFIX}/lib/python3.10/site-packages/torch/lib"
+export LD_LIBRARY_PATH="${TORCH_LIB_PATH}:${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+echo "🔧 Library Path Configured:"
+echo "   TORCH_LIB: $TORCH_LIB_PATH"
+
+# ========================================================================
+# OFFLINE HUGGINGFACE CONFIG
+# ========================================================================
 export HF_HOME="/scratch/${USER}/.cache/huggingface"
 export HF_HUB_CACHE="/scratch/${USER}/.cache/huggingface"
 export TRANSFORMERS_CACHE="/scratch/${USER}/.cache/huggingface"
-
-# 2. Force offline mode
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
