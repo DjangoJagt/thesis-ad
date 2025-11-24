@@ -7,8 +7,8 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --account=Education-AE-MSc-AE
-#SBATCH --output=/scratch/%u/univad/logs/masks_%j.out
-#SBATCH --error=/scratch/%u/univad/logs/masks_%j.err
+#SBATCH --output=/scratch/${USER}/univad/logs/masks_%j.out
+#SBATCH --error=/scratch/${USER}/univad/logs/masks_%j.err
 
 # ========================================================================
 # UniVAD - Mask Generation (SAM + GroundingDINO)
