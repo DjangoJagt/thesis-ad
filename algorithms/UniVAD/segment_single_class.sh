@@ -63,8 +63,6 @@ echo "================================================="
 # ========================================================================
 # Load Modules & Conda Environment
 # ========================================================================
-
-module purge
 module load miniconda3
 
 unset CONDA_SHLVL
@@ -115,7 +113,7 @@ DATA_ROOT="${DATA_PATH}/${DATASET}"
 # Build Python Command
 # ========================================================================
 
-CMD="python algorithms/UniVAD/segment_single_class.py \
+CMD="python segment_single_class.py \
     --dataset $DATASET \
     --mask_path $MASKS_PATH \
     --dataset_root $DATA_ROOT \
