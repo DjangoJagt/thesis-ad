@@ -410,7 +410,7 @@ if __name__ == "__main__":
                     for i in range(args.round, args.round + k_shot)
                 ]
             elif dataset_name == "visa":
-                root_dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
+                root_dir = os.path.join(dataset_dir, "1cls", cls_name.replace(" ", "_"), "train", "good")
 
                 if cls_name.replace(" ", "_") in ["capsules", "cashew", "chewinggum", "fryum", "pipe_fryum"]:
                     fmt = "{:03d}.JPG"
