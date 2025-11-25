@@ -158,45 +158,24 @@ if __name__ == "__main__":
     image_size = args.image_size
     
     # Create descriptive subdirectory for this run configuration
-    run_config_parts = []
-    run_config_parts.append(f"k{k_shot}")  # k-shot
-    
-    # Check if masks will be used (only if not force_texture and class_name specified for gate detection)
-    will_use_masks = False
-    if args.class_name != "None" and not args.force_texture:
-        # Check if masks exist for this class
-        if dataset_name == "mvtec":
-            mask_check_path = f"{args.masks_path}/mvtec/{args.class_name}"
-        elif dataset_name == "cognex":
-            mask_check_path = f"{args.masks_path}/cognex_data/{args.class_name}"
-        # elif dataset_name == "sick":
-        #     mask_check_path = f"{args.masks_path}/sick_data/{args.class_name}"
-        else:
-            mask_check_path = f"{args.masks_path}/{dataset_name}/{args.class_name}"
-        
-        if os.path.exists(mask_check_path):
-            will_use_masks = True
-            run_config_parts.append("masks")
-        else:
-            run_config_parts.append("no_masks")
-    else:
-        run_config_parts.append("no_masks")
-    
+    run_config_parts = [f"k{k_shot}"]
+
+    mask_dataset_root = os.path.join(args.masks_path, dataset_name)
+    mask_dir_exists = os.path.isdir(mask_dataset_root)
+    will_use_masks = mask_dir_exists and not args.force_texture
+    run_config_parts.append("mask" if will_use_masks else "no_mask")
+
     # CFA status (also disabled when force_texture is active)
     if args.disable_cfa or args.force_texture:
         run_config_parts.append("no_cfa")
     else:
         run_config_parts.append("cfa")
-    
-    # Model variant
-    if args.light:
-        run_config_parts.append("light")
-    else:
-        run_config_parts.append("full")
+
+    run_config_parts.append("light" if args.light else "full")
     
     run_config = "_".join(run_config_parts)
     save_path = f"{args.save_path}/{dataset_name}/{run_config}/"
-    
+
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     txt_path = os.path.join(save_path, "log.txt")
@@ -506,14 +485,7 @@ if __name__ == "__main__":
                                     .replace(".JPG", "")
                                     .replace(".jpeg", "")
                                     .replace(".JPEG", ""))
-                        
-                        # Construct mask path using configurable masks_path
-                        if dataset_name == "cognex":
-                            mask_base = f"{args.masks_path}/cognex_data/{mask_dir}"
-                        # elif dataset_name == "sick":
-                        #     mask_base = f"{args.masks_path}/sick_data/{mask_dir}"
-                        else:
-                            mask_base = f"{args.masks_path}/{dataset_name}/{mask_dir}"
+                        mask_base = os.path.join(mask_dataset_root, mask_dir)
                         
                         mask_path_color = f"{mask_base}/grounding_mask_color.png"
                         mask_path_gray = f"{mask_base}/grounding_mask.png"
