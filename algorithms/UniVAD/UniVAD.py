@@ -1394,6 +1394,52 @@ class UniVAD(nn.Module):
                 dim=1,
             )
 
+        if self.gate in (object_type.SINGLE, object_type.MULTI):
+            self._finalize_part_feature_lists()
+
+
+    def _finalize_part_feature_lists(self) -> None:
+        """Convert cached part features from Python lists to tensors."""
+        if getattr(self, "normal_dino_patches", None) is None:
+            return
+
+        dino_dim = (
+            self.dino_embed_dim
+            if getattr(self, "dino_embed_dim", None) is not None
+            else self.normal_dino_patches.shape[-1]
+        )
+        dino_dtype = self.normal_dino_patches.dtype
+
+        for idx in range(len(self.normal_dino_part_patch_features)):
+            entry = self.normal_dino_part_patch_features[idx]
+            if isinstance(entry, list):
+                if len(entry) == 0:
+                    self.normal_dino_part_patch_features[idx] = torch.empty(
+                        (0, dino_dim), dtype=dino_dtype, device=self.device
+                    )
+                else:
+                    self.normal_dino_part_patch_features[idx] = torch.cat(
+                        entry, dim=0
+                    )
+
+        for layer in range(len(self.normal_clip_part_patch_features)):
+            if layer % 2 == 0:
+                continue
+            clip_dtype = self.normal_patch_tokens[layer].dtype
+            for idx in range(len(self.normal_clip_part_patch_features[layer])):
+                entry = self.normal_clip_part_patch_features[layer][idx]
+                if isinstance(entry, list):
+                    if len(entry) == 0:
+                        self.normal_clip_part_patch_features[layer][idx] = torch.empty(
+                            (0, self.clip_embed_dim),
+                            dtype=clip_dtype,
+                            device=self.device,
+                        )
+                    else:
+                        self.normal_clip_part_patch_features[layer][idx] = torch.cat(
+                            entry, dim=0
+                        )
+
 
 def calculate_iou_torch(mask1, mask2):
     intersection = torch.sum((mask1 & mask2).float())
