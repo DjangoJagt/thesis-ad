@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name="UniVAD_Test"
-#SBATCH --partition=gpu-a100-small
-#SBATCH --time=04:00:00
+#SBATCH --partition=gpu-a100
+#SBATCH --time=01:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=2          
 #SBATCH --gpus-per-task=1
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem=32G     
 #SBATCH --account=education-ae-msc-ae
 #SBATCH --output=/scratch/djjagt/univad/logs/univad_%j_test.out
 #SBATCH --error=/scratch/djjagt/univad/logs/univad_%j_test.err
