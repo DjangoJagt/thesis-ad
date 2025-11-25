@@ -84,6 +84,16 @@ def see_image(data, heatmap, savepath, heatmap_intra):
         heat = np.round(heat * 128).astype(np.uint8)
         cv2.imwrite(f"{savepath}/heatresult{i}.jpg", heat)
 
+def load_mask_grayscale(mask_path: str, target_size: int) -> np.ndarray:
+    """Load a grayscale mask and resize it to the model's working resolution."""
+    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    if mask is None:
+        raise FileNotFoundError(f"Mask not found or unreadable: {mask_path}")
+    if mask.shape[0] != target_size or mask.shape[1] != target_size:
+        mask = cv2.resize(mask, (target_size, target_size), interpolation=cv2.INTER_NEAREST)
+    return mask
+
+
 class UniVAD(nn.Module):
 
     def __init__(self, image_size=224, lightweight: bool = False, enable_cfa: bool = False, force_texture: bool = False, masks_path: str = "./masks", data_path: str = "./data") -> None:
@@ -638,7 +648,7 @@ class UniVAD(nn.Module):
             query_mask_path = (
                 f"./heat_masks/{self.class_name}_heat/test/0/heatresult_refined.png"
             )
-            query_tmp_mask = cv2.imread(query_mask_path, cv2.IMREAD_GRAYSCALE)
+            query_tmp_mask = load_mask_grayscale(query_mask_path, self.image_size)
 
             # query_tmp_mask = torch.tensor(query_tmp_mask)
 
@@ -1280,7 +1290,7 @@ class UniVAD(nn.Module):
                     .resize((self.image_size, self.image_size))
                 )
                 normal_mask_path = f"./heat_masks/{self.class_name}_heat/train/{i}/heatresult_refined.png"
-                normal_masks = cv2.imread(normal_mask_path, cv2.IMREAD_GRAYSCALE)
+                normal_masks = load_mask_grayscale(normal_mask_path, self.image_size)
 
                 normal_masks_capm, normal_mask_idxs = split_masks_from_one_mask_with_bg(
                     normal_masks
