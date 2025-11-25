@@ -94,6 +94,42 @@ def load_mask_grayscale(mask_path: str, target_size: int) -> np.ndarray:
     return mask
 
 
+def _to_uint8_rgb(array: np.ndarray) -> np.ndarray:
+    """Normalize numpy data into uint8 RGB format for PIL conversions."""
+    if array.ndim == 3 and array.shape[0] in (1, 3) and array.shape[-1] not in (1, 3):
+        array = np.transpose(array, (1, 2, 0))
+
+    if array.dtype != np.uint8:
+        arr = array.astype(np.float32)
+        if arr.max() <= 1.0 + 1e-6:
+            arr = arr * 255.0
+        arr = np.clip(arr, 0.0, 255.0)
+        array = arr.astype(np.uint8)
+    if array.ndim == 2:
+        array = np.repeat(array[:, :, None], 3, axis=2)
+    elif array.shape[-1] == 1:
+        array = np.repeat(array, 3, axis=-1)
+    return array
+
+
+def ensure_image_np(image_like, target_size: int) -> np.ndarray:
+    """Convert various image carriers (PIL/np/torch) into RGB numpy arrays of target size."""
+    if isinstance(image_like, Image.Image):
+        pil_img = image_like
+    elif torch.is_tensor(image_like):
+        pil_img = Image.fromarray(_to_uint8_rgb(image_like.detach().cpu().numpy()))
+    elif isinstance(image_like, np.ndarray):
+        pil_img = Image.fromarray(_to_uint8_rgb(image_like))
+    else:
+        raise TypeError(f"Unsupported image type: {type(image_like)}")
+
+    if pil_img.mode != "RGB":
+        pil_img = pil_img.convert("RGB")
+    if pil_img.size != (target_size, target_size):
+        pil_img = pil_img.resize((target_size, target_size), Image.BILINEAR)
+    return np.array(pil_img)
+
+
 class UniVAD(nn.Module):
 
     def __init__(self, image_size=224, lightweight: bool = False, enable_cfa: bool = False, force_texture: bool = False, masks_path: str = "./masks", data_path: str = "./data") -> None:
@@ -771,15 +807,10 @@ class UniVAD(nn.Module):
             )
 
             if image_pil is not None:
-                pil_img = image_pil[0]
-                if pil_img.size != (self.image_size, self.image_size):
-                    pil_img = pil_img.resize((self.image_size, self.image_size), Image.BILINEAR)
-                image = np.array(pil_img)
+                image = ensure_image_np(image_pil[0], self.image_size)
             else:
-                image = np.array(
-                    Image.open(image_path)
-                    .convert("RGB")
-                    .resize((self.image_size, self.image_size))
+                image = ensure_image_np(
+                    Image.open(image_path).convert("RGB"), self.image_size
                 )
 
             features = self.component_feature_extractor.extract(image, query_masks)
