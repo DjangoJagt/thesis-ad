@@ -81,6 +81,12 @@ export TRANSFORMERS_CACHE="/scratch/${USER}/.cache/huggingface"
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
+# CLIP / general cache (matches download_clip.py)
+export XDG_CACHE_HOME="/scratch/${USER}/.cache"
+export TORCH_HOME="/scratch/${USER}/.cache/torch"
+
+mkdir -p "$XDG_CACHE_HOME" "$TORCH_HOME"
+
 # ========================================================================
 # GPU Verification
 # ========================================================================
