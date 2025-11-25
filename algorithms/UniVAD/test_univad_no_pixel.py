@@ -451,11 +451,8 @@ if __name__ == "__main__":
                 files = sorted(os.listdir(dir))[:k_shot]
                 normal_image_paths = [os.path.join(dir, file) for file in files]
             elif dataset_name == "cognex":
-                dir = (
-                    "./data/cognex_data/"
-                    + cls_name
-                    + "/train/good"
-                )
+                dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
+
                 files = sorted(os.listdir(dir))
                 # Filter for image files only
                 files = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'))]
@@ -463,11 +460,8 @@ if __name__ == "__main__":
                 normal_image_paths = [os.path.join(dir, file) for file in files]
                 normal_image_paths = [os.path.join(dir, file) for file in files]
             elif dataset_name == "sick":
-                dir = (
-                    "./data/sick_data/"
-                    + cls_name
-                    + "/train/good"
-                )
+                dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
+
                 files = sorted(os.listdir(dir))
                 # Filter for image files only
                 files = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'))]
