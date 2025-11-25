@@ -169,8 +169,8 @@ if __name__ == "__main__":
             mask_check_path = f"{args.masks_path}/mvtec/{args.class_name}"
         elif dataset_name == "cognex":
             mask_check_path = f"{args.masks_path}/cognex_data/{args.class_name}"
-        elif dataset_name == "sick":
-            mask_check_path = f"{args.masks_path}/sick_data/{args.class_name}"
+        # elif dataset_name == "sick":
+        #     mask_check_path = f"{args.masks_path}/sick_data/{args.class_name}"
         else:
             mask_check_path = f"{args.masks_path}/{dataset_name}/{args.class_name}"
         
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         )
     elif dataset_name == "brainmri":
         test_data = BrainMRIDataset(
-        root="./data/BrainMRI",
+        root=dataset_dir,
         transform=transform,
         target_transform=transform,
         aug_rate=-1,
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     )
     elif dataset_name == "his":
         test_data = HISDataset(
-        root="./data/HIS",
+        root=dataset_dir,
         transform=transform,
         target_transform=transform,
         aug_rate=-1,
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     )
     elif dataset_name == "resc":
         test_data = RESCDataset(
-        root="./data/RESC",
+        root=dataset_dir,
         transform=transform,
         target_transform=transform,
         aug_rate=-1,
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     )
     elif dataset_name == "chestxray":
         test_data = ChestXrayDataset(
-        root="./data/ChestXray",
+        root=dataset_dir,
         transform=transform,
         target_transform=transform,
         aug_rate=-1,
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     )
     elif dataset_name == "oct17":
         test_data = OCT17Dataset(
-        root="./data/OCT17",
+        root=dataset_dir,
         transform=transform,
         target_transform=transform,
         aug_rate=-1,
@@ -311,7 +311,7 @@ if __name__ == "__main__":
     )
     elif dataset_name == "liverct":
         test_data = LiverCTDataset(
-        root="./data/LiverCT",
+        root=dataset_dir,
         transform=transform,
         target_transform=transform,
         aug_rate=-1,
@@ -401,67 +401,38 @@ if __name__ == "__main__":
         if cls_name != cls_last:
             if dataset_name == "mvtec":
                 normal_image_paths = [
-                    "./data/mvtec/"
-                    + cls_name.replace(" ", "_")
-                    + "/train/good/"
-                    + str(i).zfill(3)
-                    + ".png"
+                    os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good", f"{i:03d}.png")
                     for i in range(args.round, args.round + k_shot)
                 ]
             elif dataset_name == "mvtec_loco":
                 normal_image_paths = [
-                    "./data/mvtec_loco/"
-                    + cls_name.replace(" ", "_")
-                    + "/train/good/"
-                    + str(i).zfill(3)
-                    + ".png"
+                    os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good", f"{i:03d}.png")
                     for i in range(args.round, args.round + k_shot)
                 ]
             elif dataset_name == "visa":
-                if cls_name.replace(" ", "_") in [
-                    "capsules",
-                    "cashew",
-                    "chewinggum",
-                    "fryum",
-                    "pipe_fryum",
-                ]:
-                    normal_image_paths = [
-                        "./data/VisA_pytorch/1cls/"
-                        + cls_name.replace(" ", "_")
-                        + "/train/good/"
-                        + str(i).zfill(3)
-                        + ".JPG"
-                        for i in range(args.round, args.round + k_shot)
-                    ]
+                root_dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
+
+                if cls_name.replace(" ", "_") in ["capsules", "cashew", "chewinggum", "fryum", "pipe_fryum"]:
+                    fmt = "{:03d}.JPG"
                 else:
-                    normal_image_paths = [
-                        "./data/VisA_pytorch/1cls/"
-                        + cls_name.replace(" ", "_")
-                        + "/train/good/"
-                        + str(i).zfill(4)
-                        + ".JPG"
-                        for i in range(args.round, args.round + k_shot)
-                    ]
+                    fmt = "{:04d}.JPG"
+                normal_image_paths = [
+                    os.path.join(root_dir, fmt.format(i))
+                    for i in range(args.round, args.round + k_shot)
+                ]
             elif dataset_name in ["his", "oct17", "chestxray", "brainmri", "liverct", "resc"]:
-                dir = (
-                    "./data/"
-                    + cls_name.replace(" ", "_")
-                    + "/train/good"
-                )
+                dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
                 files = sorted(os.listdir(dir))[:k_shot]
                 normal_image_paths = [os.path.join(dir, file) for file in files]
             elif dataset_name == "cognex":
                 dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
-
                 files = sorted(os.listdir(dir))
                 # Filter for image files only
                 files = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'))]
                 files = files[args.round:args.round + k_shot]
                 normal_image_paths = [os.path.join(dir, file) for file in files]
-                normal_image_paths = [os.path.join(dir, file) for file in files]
             elif dataset_name == "sick":
                 dir = os.path.join(dataset_dir, cls_name.replace(" ", "_"), "train", "good")
-
                 files = sorted(os.listdir(dir))
                 # Filter for image files only
                 files = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'))]
@@ -537,10 +508,10 @@ if __name__ == "__main__":
                                     .replace(".JPEG", ""))
                         
                         # Construct mask path using configurable masks_path
-                        if dataset_name == "sick":
-                            mask_base = f"{args.masks_path}/sick_data/{mask_dir}"
-                        elif dataset_name == "cognex":
+                        if dataset_name == "cognex":
                             mask_base = f"{args.masks_path}/cognex_data/{mask_dir}"
+                        # elif dataset_name == "sick":
+                        #     mask_base = f"{args.masks_path}/sick_data/{mask_dir}"
                         else:
                             mask_base = f"{args.masks_path}/{dataset_name}/{mask_dir}"
                         
