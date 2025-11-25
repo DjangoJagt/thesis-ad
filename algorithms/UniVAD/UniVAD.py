@@ -502,10 +502,10 @@ class UniVAD(nn.Module):
             .replace(".jpeg", "/grounding_mask.png")
             .replace(".JPEG", "/grounding_mask.png")
         )
-        print(f"[DEBUG] Image path: {image_path}")
-        print(f"[DEBUG] Data path: {self.data_path}")
-        print(f"[DEBUG] Relative path: {relative_path}")
-        print(f"[DEBUG] Mask path: {query_sam_mask_path}")
+        # print(f"[DEBUG] Image path: {image_path}")
+        # print(f"[DEBUG] Data path: {self.data_path}")
+        # print(f"[DEBUG] Relative path: {relative_path}")
+        # print(f"[DEBUG] Mask path: {query_sam_mask_path}")
         query_tmp_mask = np.array(
             Image.open(query_sam_mask_path).resize((self.image_size, self.image_size))
         )
@@ -979,7 +979,15 @@ class UniVAD(nn.Module):
                 self.normal_dino_part_patch_features = []
                 self.normal_clip_part_patch_features = []
                 return
-            # For SINGLE / MULTI continue with full component preparation below
+            # For SINGLE / MULTI gates in lightweight mode: we need DINO models
+            # If they're not available, force TEXTURE mode
+            if getattr(self, "dinov2_net", None) is None or getattr(self, "dino_net", None) is None:
+                print(f"[Warning] SINGLE/MULTI gate detected but DINO models not available in lightweight mode. Forcing TEXTURE mode.")
+                self.gate = object_type.TEXTURE
+                self.normal_dino_part_patch_features = []
+                self.normal_clip_part_patch_features = []
+                return
+            # Continue with full component preparation for SINGLE/MULTI gates
 
         clip_transformed_normal_image = self.transform_clip(few_shot_samples).to(
             self.device
@@ -1072,10 +1080,13 @@ class UniVAD(nn.Module):
             print(f"[Info] Force TEXTURE mode enabled, skipping component-level features.")
         elif object_ratio > 0.65 and len(grounded_sam_masks) > 0 and len(grounded_sam_masks[0]) <= 2:
             self.gate = object_type.TEXTURE
+            print(f"[Info] Gate set to TEXTURE (object_ratio={object_ratio:.3f}, num_masks={len(grounded_sam_masks[0]) if len(grounded_sam_masks) > 0 else 0})")
         elif len(grounded_sam_masks) > 0 and len(grounded_sam_masks[0]) == 1:
             self.gate = object_type.SINGLE
+            print(f"[Info] Gate set to SINGLE (num_masks={len(grounded_sam_masks[0])})")
         elif len(grounded_sam_masks) > 0 and len(grounded_sam_masks[0]) > 1:
             self.gate = object_type.MULTI
+            print(f"[Info] Gate set to MULTI (num_masks={len(grounded_sam_masks[0])})")
         else:
             # No masks found or failed to load - default to TEXTURE mode
             self.gate = object_type.TEXTURE
