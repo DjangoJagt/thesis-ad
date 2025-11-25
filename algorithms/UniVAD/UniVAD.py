@@ -98,7 +98,7 @@ class UniVAD(nn.Module):
         clip_name = "ViT-L-14-336"
         if self.lightweight:
             # smaller CLIP to reduce memory footprint on CPU devices
-            clip_name = "ViT-B-32"
+            clip_name = "ViT-B-16" # "ViT-B-32" 
         self.image_size = image_size
         pretrained = "openai"
         # device = torch.device("cuda")
@@ -158,7 +158,13 @@ class UniVAD(nn.Module):
             self.clip_patch_grid_size = grid[0] if isinstance(grid, (tuple, list)) else grid
         else:
             # fallback: infer from image_size and model name
-            patch_size = 14 if 'L-14' in clip_name else 32
+            if 'L-14' in clip_name:
+                patch_size = 14
+            elif '16' in clip_name:  # <--- ADD THIS CHECK
+                patch_size = 16
+            else:
+                patch_size = 32      # Default for ViT-B/32
+            
             self.clip_patch_grid_size = self.image_size // patch_size
 
         # Store CLIP embedding dimension

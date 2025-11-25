@@ -110,6 +110,7 @@ EOF
 # ========================================================================
 DATASET="sick"                  # mvtec | sick | cognex | visa
 CLASS_NAME="None"               # or specific product ID (e.g. "90006036")
+IMAGE_SIZE=336
 K_SHOT=10
 NUM_IMAGES=-1
 DEVICE="cuda"
@@ -127,6 +128,7 @@ CMD="python test_univad_no_pixel.py \
     --data_path $DATA_PATH/$DATASET \
     --masks_path $MASKS_PATH \
     --save_path $RESULTS_PATH/$DATASET \
+    --image_size $IMAGE_SIZE \
     --k_shot $K_SHOT \
     --device $DEVICE"
 
