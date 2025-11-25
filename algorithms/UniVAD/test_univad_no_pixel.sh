@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4          
 #SBATCH --gpus-per-task=1
-#SBATCH --mem-per-cpu=8G     
+#SBATCH --mem-per-cpu=8000M     
 #SBATCH --account=education-ae-msc-ae
 #SBATCH --output=/scratch/djjagt/univad/logs/univad_%j_test.out
 #SBATCH --error=/scratch/djjagt/univad/logs/univad_%j_test.err
