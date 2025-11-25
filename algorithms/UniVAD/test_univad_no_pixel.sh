@@ -3,9 +3,9 @@
 #SBATCH --partition=gpu-a100
 #SBATCH --time=01:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2          
+#SBATCH --cpus-per-task=4          
 #SBATCH --gpus-per-task=1
-#SBATCH --mem-per-cpu=16G     
+#SBATCH --mem-per-cpu=8G     
 #SBATCH --account=education-ae-msc-ae
 #SBATCH --output=/scratch/djjagt/univad/logs/univad_%j_test.out
 #SBATCH --error=/scratch/djjagt/univad/logs/univad_%j_test.err
