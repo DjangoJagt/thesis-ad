@@ -483,6 +483,9 @@ class UniVAD(nn.Module):
 
         # Construct mask path using configurable paths
         # Extract relative path from data_path
+        # 1. Get dataset name (e.g. "sick") explicitly
+        ds_name = os.path.basename(self.data_path.rstrip('/'))
+
         if self.data_path in image_path:
             relative_path = image_path.replace(self.data_path, "").lstrip("/")
         else:
@@ -491,7 +494,7 @@ class UniVAD(nn.Module):
             relative_path = parts[-1] if len(parts) > 1 else image_path
         
         query_sam_mask_path = (
-            (f"{self.masks_path}/" + relative_path)
+            os.path.join(self.masks_path, ds_name, relative_path)
             .replace(".png", "/grounding_mask.png")
             .replace(".PNG", "/grounding_mask.png")
             .replace(".jpg", "/grounding_mask.png")
@@ -499,7 +502,10 @@ class UniVAD(nn.Module):
             .replace(".jpeg", "/grounding_mask.png")
             .replace(".JPEG", "/grounding_mask.png")
         )
-        # print(query_sam_mask_path)
+        print(f"[DEBUG] Image path: {image_path}")
+        print(f"[DEBUG] Data path: {self.data_path}")
+        print(f"[DEBUG] Relative path: {relative_path}")
+        print(f"[DEBUG] Mask path: {query_sam_mask_path}")
         query_tmp_mask = np.array(
             Image.open(query_sam_mask_path).resize((self.image_size, self.image_size))
         )
@@ -900,16 +906,27 @@ class UniVAD(nn.Module):
 
             # Dynamic gate detection in lightweight mode (same as full mode)
             # Load grounded SAM masks to determine object type
-            grounded_sam_mask_paths = [
-                ("./masks/" + image_path.split('/data/')[-1])
-                .replace(".png", "/grounding_mask.png")
-                .replace(".PNG", "/grounding_mask.png")
-                .replace(".jpg", "/grounding_mask.png")
-                .replace(".JPG", "/grounding_mask.png")
-                .replace(".jpeg", "/grounding_mask.png")
-                .replace(".JPEG", "/grounding_mask.png")
-                for image_path in image_paths
-            ]
+            grounded_sam_mask_paths = []
+            ds_name = os.path.basename(self.data_path.rstrip('/'))
+            for image_path in image_paths:
+                # Extract relative path from data_path
+                if self.data_path in image_path:
+                    relative_path = image_path.replace(self.data_path, "").lstrip("/")
+                else:
+                    # Fallback: try to split by '/data/'
+                    parts = image_path.split('/data/')
+                    relative_path = parts[-1] if len(parts) > 1 else image_path
+                
+                mask_path = (
+                    os.path.join(self.masks_path, ds_name, relative_path)
+                    .replace(".png", "/grounding_mask.png")
+                    .replace(".PNG", "/grounding_mask.png")
+                    .replace(".jpg", "/grounding_mask.png")
+                    .replace(".JPG", "/grounding_mask.png")
+                    .replace(".jpeg", "/grounding_mask.png")
+                    .replace(".JPEG", "/grounding_mask.png")
+                )
+                grounded_sam_mask_paths.append(mask_path)
             
             # Try to load masks, fallback to TEXTURE mode if masks don't exist
             grounded_sam_masks = []
@@ -1000,16 +1017,27 @@ class UniVAD(nn.Module):
         color_tensor = color_tensor[:, :, None, None]
         self.color_tensor = color_tensor.repeat(1, 1, self.image_size, self.image_size)
 
-        grounded_sam_mask_paths = [
-            ("./masks/" + image_path.split('/data/')[-1])
-            .replace(".png", "/grounding_mask.png")
-            .replace(".PNG", "/grounding_mask.png")
-            .replace(".jpg", "/grounding_mask.png")
-            .replace(".JPG", "/grounding_mask.png")
-            .replace(".jpeg", "/grounding_mask.png")
-            .replace(".JPEG", "/grounding_mask.png")
-            for image_path in image_paths
-        ]
+        grounded_sam_mask_paths = []
+        ds_name = os.path.basename(self.data_path.rstrip('/'))
+        for image_path in image_paths:
+            # Extract relative path from data_path
+            if self.data_path in image_path:
+                relative_path = image_path.replace(self.data_path, "").lstrip("/")
+            else:
+                # Fallback: try to split by '/data/'
+                parts = image_path.split('/data/')
+                relative_path = parts[-1] if len(parts) > 1 else image_path
+            
+            mask_path = (
+                os.path.join(self.masks_path, ds_name, relative_path)
+                .replace(".png", "/grounding_mask.png")
+                .replace(".PNG", "/grounding_mask.png")
+                .replace(".jpg", "/grounding_mask.png")
+                .replace(".JPG", "/grounding_mask.png")
+                .replace(".jpeg", "/grounding_mask.png")
+                .replace(".JPEG", "/grounding_mask.png")
+            )
+            grounded_sam_mask_paths.append(mask_path)
         
         # Try to load masks, fallback to TEXTURE mode if masks don't exist
         grounded_sam_masks = []
