@@ -771,7 +771,10 @@ class UniVAD(nn.Module):
             )
 
             if image_pil is not None:
-                image = np.array(image_pil[0])
+                pil_img = image_pil[0]
+                if pil_img.size != (self.image_size, self.image_size):
+                    pil_img = pil_img.resize((self.image_size, self.image_size), Image.BILINEAR)
+                image = np.array(pil_img)
             else:
                 image = np.array(
                     Image.open(image_path)
