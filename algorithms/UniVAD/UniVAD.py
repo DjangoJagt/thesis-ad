@@ -3,6 +3,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import logging
+from typing import Optional
 import torch
 from torch import nn
 from torchvision.transforms import v2
@@ -134,7 +135,17 @@ def ensure_image_np(image_like, target_size: int) -> np.ndarray:
 
 class UniVAD(nn.Module):
 
-    def __init__(self, image_size=224, lightweight: bool = False, enable_cfa: bool = False, force_texture: bool = False, masks_path: str = "./masks", data_path: str = "./data") -> None:
+    def __init__(
+        self,
+        image_size=224,
+        lightweight: bool = False,
+        enable_cfa: bool = False,
+        force_texture: bool = False,
+        masks_path: str = "./masks",
+        data_path: str = "./data",
+        clip_model_name: Optional[str] = None,
+        dino_model_name: Optional[str] = None,
+    ) -> None:
         super().__init__()
         # lightweight mode reduces memory by using a smaller CLIP and skipping DINO/component-heavy pieces
         self.lightweight = lightweight
@@ -143,35 +154,28 @@ class UniVAD(nn.Module):
         self.masks_path = masks_path  # configurable masks directory path
         self.data_path = data_path  # configurable data directory path
 
-        clip_name = "ViT-L-14-336"
-        if self.lightweight:
-            # smaller CLIP to reduce memory footprint on CPU devices
-            clip_name = "ViT-B-16" # "ViT-B-32" 
+        self.clip_model_name = clip_model_name or ("ViT-B-16" if self.lightweight else "ViT-L-14-336")
+        self.dino_model_name = dino_model_name or ("dinov2_vits14" if self.lightweight else "dinov2_vitg14")
+
+        clip_name = self.clip_model_name
         self.image_size = image_size
         pretrained = "openai"
         # device = torch.device("cuda")
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        # Adjust output layers based on model depth
-        # ViT-L/14: 24 layers, ViT-B: 12 layers
-        if self.lightweight:
-            # ViT-B/32 has 12 layers, use every 3rd layer
-            self.out_layers = [3, 6, 9, 12]
-        else:
-            # ViT-L/14 has 24 layers, use every 6th layer
-            self.out_layers = [6, 12, 18, 24]
 
         # create CLIP model (smaller variant in lightweight mode)
         self.clip_model, _, self.preprocess = open_clip.create_model_and_transforms(
             clip_name, self.image_size, pretrained=pretrained
         )  # CLIP
 
+        self.out_layers = self._determine_out_layers()
+
         # load DINO models: full (heavy) vs lightweight (smaller backbone)
         if not self.lightweight:
             # full mode: keep original heavy components
             self.dino_net = DinoFeaturizer()
             self.dinov2_net = torch.hub.load(
-                "./models/dinov2", "dinov2_vitg14", pretrained=True, source="local"
+                "./models/dinov2", self.dino_model_name, pretrained=True, source="local"
             ).to(device)
             # CFA can be toggled via enable_cfa flag
             self.cfa = CFA() if self.enable_cfa else None
@@ -182,7 +186,7 @@ class UniVAD(nn.Module):
             try:
                 self.dino_net = DinoFeaturizer()
                 self.dinov2_net = torch.hub.load(
-                    "./models/dinov2", "dinov2_vits14", pretrained=True, source="local"
+                    "./models/dinov2", self.dino_model_name, pretrained=True, source="local"
                 ).to(device)
             except Exception as e:
                 # if loading fails, fall back to no DINO; keep going
@@ -1506,6 +1510,34 @@ class UniVAD(nn.Module):
                         self.normal_clip_part_patch_features[layer][idx] = torch.cat(
                             entry, dim=0
                         )
+
+    def _determine_out_layers(self) -> list[int]:
+        """Pick representative CLIP layers based on actual backbone depth."""
+        total_layers = None
+        visual = getattr(self.clip_model, "visual", None)
+        transformer = getattr(visual, "transformer", None)
+        if transformer is not None and hasattr(transformer, "resblocks"):
+            total_layers = len(transformer.resblocks)
+
+        if total_layers is None:
+            # Fallback to common depths when transformer metadata unavailable
+            if "ViT-B" in self.clip_model_name or "B-" in self.clip_model_name:
+                total_layers = 12
+            elif "ViT-H" in self.clip_model_name:
+                total_layers = 32
+            else:
+                total_layers = 24  # default for ViT-L family
+
+        num_taps = min(4, total_layers)
+        step = max(total_layers // num_taps, 1)
+        out_layers = [step * i for i in range(1, num_taps + 1)]
+        out_layers[-1] = total_layers
+
+        for idx in range(1, len(out_layers)):
+            if out_layers[idx] <= out_layers[idx - 1]:
+                out_layers[idx] = min(total_layers, out_layers[idx - 1] + 1)
+
+        return out_layers
 
 
 def calculate_iou_torch(mask1, mask2):

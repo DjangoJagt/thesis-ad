@@ -139,7 +139,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_images", type=int, default=-1, help="Number of test images to process (-1 for all)"
     )
+    parser.add_argument("--clip_model", type=str, default="ViT-L-14-336", help="CLIP backbone variant to load"
+    )
+    parser.add_argument("--dino_model", type=str, default="dinov2_vitg14", help="DINOv2 backbone variant to load"
+    )
     args = parser.parse_args()
+
+    DEFAULT_CLIP_FULL = "ViT-L-14-336"
+    DEFAULT_DINO_FULL = "dinov2_vitg14"
+    DEFAULT_CLIP_LIGHT = "ViT-B-16"
+    DEFAULT_DINO_LIGHT = "dinov2_vits14"
+
+    if args.light:
+        # lightweight pipeline always uses the smallest backbones regardless of CLI overrides
+        if args.clip_model != DEFAULT_CLIP_LIGHT:
+            print("[Info] Lightweight mode overrides clip_model to ViT-B-16.")
+        if args.dino_model != DEFAULT_DINO_LIGHT:
+            print("[Info] Lightweight mode overrides dino_model to dinov2_vits14.")
+        args.clip_model = DEFAULT_CLIP_LIGHT
+        args.dino_model = DEFAULT_DINO_LIGHT
 
     dataset_name = args.dataset
     dataset_dir = args.data_path
@@ -172,6 +190,17 @@ if __name__ == "__main__":
         run_config_parts.append("cfa")
 
     run_config_parts.append("light" if args.light else "full")
+
+    if args.light:
+        pass  # lightweight runs always imply the default small backbones
+    else:
+        def _safe_tag(name: str) -> str:
+            return name.replace("/", "-").replace(" ", "_")
+
+        if args.clip_model != DEFAULT_CLIP_FULL:
+            run_config_parts.append(f"clip-{_safe_tag(args.clip_model)}")
+        if args.dino_model != DEFAULT_DINO_FULL:
+            run_config_parts.append(_safe_tag(args.dino_model))
     
     run_config = "_".join(run_config_parts)
     save_path = f"{args.save_path}/{dataset_name}/{run_config}/"
@@ -212,7 +241,9 @@ if __name__ == "__main__":
         enable_cfa=(not args.disable_cfa),
         force_texture=args.force_texture,
         masks_path=args.masks_path,
-        data_path=args.data_path
+        data_path=args.data_path,
+        clip_model_name=args.clip_model,
+        dino_model_name=args.dino_model,
     ).to(device)
 
     # dataset
