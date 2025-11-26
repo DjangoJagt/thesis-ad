@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import glob
+import time
 
 
 def filter_bg_noise(sourcepath, classname):
@@ -14,7 +15,14 @@ def filter_bg_noise(sourcepath, classname):
     max_list = []
     seg_img_list = sorted(glob.glob(img0_path + "/*[heatresult][0-9].jpg"))
     for i, imgpath in enumerate(seg_img_list):
-        gray_img = cv2.imread(imgpath, 0)
+        gray_img = None
+        for _ in range(5):
+            gray_img = cv2.imread(imgpath, 0)
+            if gray_img is not None:
+                break
+            time.sleep(0.1)
+        if gray_img is None:
+            raise FileNotFoundError(f"Failed to read heat map: {imgpath}")
         gray_cal_otsu = gray_img[
             10 : gray_img.shape[0] - 10, 10 : gray_img.shape[0] - 10
         ]
