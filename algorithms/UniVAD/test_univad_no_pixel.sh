@@ -114,6 +114,11 @@ IMAGE_SIZE=336
 K_SHOT=10
 NUM_IMAGES=-1
 DEVICE="cuda"
+
+# Defaults: ViT-L-14-336 (CLIP) and dinov2_vitg14 (Giant DINO)
+CLIP_MODEL=""       # Options: ViT-L-14-336, ViT-L-14, ViT-B-16
+DINO_MODEL=""      # Options: dinov2_vitg14, dinov2_vitl14, dinov2_vitb14
+
 USE_LIGHT=false
 FORCE_TEXTURE=false
 DISABLE_CFA=false
@@ -139,6 +144,17 @@ fi
 if [ "$NUM_IMAGES" != "-1" ]; then
     CMD="$CMD --num_images $NUM_IMAGES"
 fi
+
+# Only add CLIP model if user provided one
+if [ -n "$CLIP_MODEL" ]; then
+    CMD="$CMD --clip_model $CLIP_MODEL"
+fi
+
+# Only add DINO model if user provided one
+if [ -n "$DINO_MODEL" ]; then 
+    CMD="$CMD --dino_model $DINO_MODEL"
+fi
+
 
 if [ "$USE_LIGHT" = true ]; then CMD="$CMD --light"; fi
 if [ "$FORCE_TEXTURE" = true ]; then CMD="$CMD --force_texture"; fi
