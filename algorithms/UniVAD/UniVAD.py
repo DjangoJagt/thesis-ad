@@ -2,6 +2,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+import logging
 import torch
 from torch import nn
 from torchvision.transforms import v2
@@ -31,6 +32,7 @@ from PIL import Image
 from enum import Enum
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+logger = logging.getLogger(__name__)
 
 
 class object_type(Enum):
@@ -744,7 +746,8 @@ class UniVAD(nn.Module):
                 ).reshape(int((self.image_size // 14) ** 2))
                 thresh_dino[thresh_dino > 0] = 1
 
-                if self.normal_dino_part_patch_features[query_mask_idxs[j]] == []:
+                ref_dino_tokens = self.normal_dino_part_patch_features[query_mask_idxs[j]]
+                if ref_dino_tokens.numel() == 0:
                     continue
 
                 sims = []
@@ -754,23 +757,32 @@ class UniVAD(nn.Module):
                     patch_tokens_reshaped = patch_tokens[i].view(
                         self.clip_patch_grid_size ** 2, 1, self.clip_embed_dim
                     )[thresh_clip > 0]
-                    normal_tokens_reshaped = self.normal_clip_part_patch_features[i][
+                    normal_layer_tokens = self.normal_clip_part_patch_features[i][
                         query_mask_idxs[j]
-                    ].reshape(1, -1, self.clip_embed_dim)
+                    ]
+                    if normal_layer_tokens.numel() == 0:
+                        continue
+                    normal_tokens_reshaped = normal_layer_tokens.reshape(
+                        1, -1, self.clip_embed_dim
+                    )
+                    if normal_tokens_reshaped.shape[1] == 0:
+                        continue
                     cosine_similarity_matrix = F.cosine_similarity(
                         patch_tokens_reshaped, normal_tokens_reshaped, dim=2
                     )
                     sim_max, _ = torch.max(cosine_similarity_matrix, dim=1)
                     sims.append(sim_max)
+                if not sims:
+                    continue
                 sim = torch.mean(torch.stack(sims, dim=0), dim=0)
 
                 dino_dim = self.dino_embed_dim if getattr(self, "dino_embed_dim", None) is not None else 1536
                 dino_patch_tokens_reshaped = dino_patch_tokens.reshape(-1, 1, dino_dim)[
                     thresh_dino > 0
                 ]
-                dino_normal_tokens_reshaped = self.normal_dino_part_patch_features[
-                    query_mask_idxs[j]
-                ].reshape(1, -1, dino_dim)
+                dino_normal_tokens_reshaped = ref_dino_tokens.reshape(1, -1, dino_dim)
+                if dino_normal_tokens_reshaped.shape[1] == 0:
+                    continue
                 cosine_similarity_matrix = F.cosine_similarity(
                     dino_patch_tokens_reshaped, dino_normal_tokens_reshaped, dim=2
                 )
@@ -1461,6 +1473,11 @@ class UniVAD(nn.Module):
                     self.normal_dino_part_patch_features[idx] = torch.empty(
                         (0, dino_dim), dtype=dino_dtype, device=self.device
                     )
+                    logger.warning(
+                        "DINO feature bank empty (class=%s, component=%d)",
+                        getattr(self, "class_name", "unknown"),
+                        idx,
+                    )
                 else:
                     self.normal_dino_part_patch_features[idx] = torch.cat(
                         entry, dim=0
@@ -1478,6 +1495,12 @@ class UniVAD(nn.Module):
                             (0, self.clip_embed_dim),
                             dtype=clip_dtype,
                             device=self.device,
+                        )
+                        logger.warning(
+                            "CLIP feature bank empty (class=%s, layer=%d, component=%d)",
+                            getattr(self, "class_name", "unknown"),
+                            layer,
+                            idx,
                         )
                     else:
                         self.normal_clip_part_patch_features[layer][idx] = torch.cat(
