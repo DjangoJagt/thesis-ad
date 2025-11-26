@@ -127,7 +127,7 @@ CMD="python test_univad_no_pixel.py \
     --dataset $DATASET \
     --data_path $DATA_PATH/$DATASET \
     --masks_path $MASKS_PATH \
-    --save_path $RESULTS_PATH/$DATASET \
+    --save_path $RESULTS_PATH \
     --image_size $IMAGE_SIZE \
     --k_shot $K_SHOT \
     --device $DEVICE"
