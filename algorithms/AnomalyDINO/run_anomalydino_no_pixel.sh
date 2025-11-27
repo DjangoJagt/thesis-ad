@@ -102,7 +102,7 @@ EOF
 # Experiment Configuration
 # ------------------------------------------
 DATASET="Sick"
-MODEL_NAME="dinov2_vitg14"
+MODEL_NAME="dinov2_vits14"
 RESOLUTION=448
 PREPROCESS="agnostic_no_mask"
 K_SHOT=10
