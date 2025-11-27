@@ -202,7 +202,7 @@ def get_dataset_info(dataset, preprocess):
             rotation_default = {o: False for o in objects}
 
     # added sick dataset
-    elif dataset == "Sick":
+    elif dataset == "sick":
         # Sick dataset products
         objects = ["10074656", "10074666", "10074790", "10762299", 
                    "11478299", "90006036", "90006124"]
