@@ -71,14 +71,14 @@ echo "   TORCH_LIB: ${TORCH_LIB_PATH}"
 # ------------------------------------------
 # Optional Offline Cache Config (uncomment if needed)
 # ------------------------------------------
-# export HF_HOME="${USER_SCRATCH}/.cache/huggingface"
+export HF_HOME="${USER_SCRATCH}/.cache/huggingface"
 # export HF_HUB_CACHE="${HF_HOME}"
 # export TRANSFORMERS_CACHE="${HF_HOME}"
 # export HF_HUB_OFFLINE=1
 # export TRANSFORMERS_OFFLINE=1
 # export XDG_CACHE_HOME="${USER_SCRATCH}/.cache"
-# export TORCH_HOME="${USER_SCRATCH}/.cache/torch"
-# mkdir -p "${HF_HOME}" "${XDG_CACHE_HOME}" "${TORCH_HOME}"
+export TORCH_HOME="${USER_SCRATCH}/.cache/torch"
+mkdir -p "${HF_HOME}" "${TORCH_HOME}" #"${XDG_CACHE_HOME}" 
 
 # ------------------------------------------
 # GPU Verification
