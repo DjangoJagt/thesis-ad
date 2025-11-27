@@ -191,8 +191,8 @@ def run_anomaly_detection(
                 if save_patch_dists:
                     np.save(f"{plots_dir}/anomaly_maps/seed={seed}/{object_name}/test/{type_anomaly}/{img_test_nr}.npy", d_masked)
 
-                # Save some example plots (3 per anomaly type)
-                if save_examples and idx < 3:
+                # Save example plots for every test sample so debugging keeps exact filenames
+                if save_examples:
 
                     fig, (ax1, ax2, ax3, ax4,) = plt.subplots(1, 4, figsize=(18, 4.5))
 
@@ -222,7 +222,8 @@ def run_anomaly_detection(
                     plt.suptitle(f"Object: {object_name}, Type: {type_anomaly}, img = ...{image_test_path[-20:]}, object patches = {mask2.sum()}/{mask2.size}")
 
                     plt.tight_layout()
-                    plt.savefig(f"{plots_dir}/{object_name}/examples/example_{type_anomaly}_{idx}.png")
+                    example_name = f"{type_anomaly}_{img_test_nr}.png"
+                    plt.savefig(f"{plots_dir}/{object_name}/examples/{example_name}")
                     plt.close()
 
     return anomaly_scores, time_memorybank, inference_times
