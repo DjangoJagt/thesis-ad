@@ -37,7 +37,7 @@ def build_logger(log_path: str) -> logging.Logger:
 
 def parse_args():
     parser = argparse.ArgumentParser("AnomalyDINO no-pixel evaluator")
-    parser.add_argument("--dataset", type=str, default="Sick")
+    parser.add_argument("--dataset", type=str, default="sick")
     parser.add_argument("--data_root", type=str, required=True)
     parser.add_argument(
         "--save_path",
