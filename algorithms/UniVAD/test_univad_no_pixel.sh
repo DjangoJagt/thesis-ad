@@ -27,7 +27,7 @@ UNIVAD_ROOT="${USER_SCRATCH}/univad"
 
 DATA_PATH="${USER_SCRATCH}/datasets"   # Input images
 MASKS_PATH="${UNIVAD_ROOT}/masks"      # Input masks (from previous step)
-RESULTS_PATH="${UNIVAD_ROOT}/results"  # Output folder
+RESULTS_PATH="${UNIVAD_ROOT}/results_2"  # Output folder
 LOG_DIR="${UNIVAD_ROOT}/logs"
 RUNS_DIR="${UNIVAD_ROOT}/runs"
 
