@@ -16,7 +16,7 @@ import tifffile as tiff
 from scipy.ndimage import label
 from bisect import bisect
 
-from src.utils import dists2map
+from src.utils import dists2map, discover_dataset_objects
 
 
 
@@ -414,14 +414,17 @@ def eval_classification(gt_filenames, prediction_filenames, aggregation_statisti
     return auroc_clf, ap_clf, f1_clf
 
 
-def get_objects_from_dataset(dataset):
-    if dataset == "MVTec":
-        objects = ["bottle"]
+def get_objects_from_dataset(dataset, dataset_base_dir=None):
+    dataset_key = dataset.lower()
+    inferred_objects = discover_dataset_objects(dataset_base_dir)
+
+    if dataset_key == "mvtec":
+        objects = inferred_objects if inferred_objects else ["bottle"]
         # objects = ["bottle", "cable", "capsule", "carpet", "grid", "hazelnut", "leather", "metal_nut", "pill", "screw", "tile", "toothbrush", "transistor", "wood", "zipper"]
-    elif dataset == "VisA":
-        objects = ["candle", "capsules", "cashew", "chewinggum", "fryum", "macaroni1", "macaroni2", "pcb1", "pcb2", "pcb3", "pcb4", "pipe_fryum"]
-    elif dataset == "Cognex":
-        objects = [ "'t_Slagershuys_Kipdij_ovenschotel_teriyaki_11738318",
+    elif dataset_key == "visa":
+        objects = inferred_objects if inferred_objects else ["candle", "capsules", "cashew", "chewinggum", "fryum", "macaroni1", "macaroni2", "pcb1", "pcb2", "pcb3", "pcb4", "pipe_fryum"]
+    elif dataset_key == "cognex":
+        objects = inferred_objects if inferred_objects else [ "'t_Slagershuys_Kipdij_ovenschotel_teriyaki_11738318",
                     "Arla_Halfvolle_melk_lactofree_10760273",
                     "Elinas_Yoghurt_Griekse_stijl_aardbei_11400153",
                     "Heemskerk_Zoete_aardappelblokjes_11463862",
@@ -431,8 +434,8 @@ def get_objects_from_dataset(dataset):
                     "Vischmeesters_Kabeljauwhaas_11829912"
                 ]
         # objects = ["Merkloos_Elstar_appels_11298357","Picnic_Geraspte_jong_belegen_kaas_48plus_11695484"]
-    elif dataset == "Sick":
-        objects = ["10074656", "10074666", "10074790", "10762299", 
+    elif dataset_key == "sick":
+        objects = inferred_objects if inferred_objects else ["10074656", "10074666", "10074790", "10762299", 
                    "11478299", "90006036", "90006124"]
     else:
         raise ValueError(f"Dataset '{dataset}' not supported in post_eval.py")
@@ -457,7 +460,7 @@ def eval_finished_run(dataset, dataset_base_dir, anomaly_maps_dir, output_dir, s
 
     # Parse the filenames of all ground truth and corresponding anomaly
     if objects is None:
-        objects = get_objects_from_dataset(dataset)
+        objects = get_objects_from_dataset(dataset, dataset_base_dir)
     # Store evaluation results in this dictionary.
     evaluation_dict = dict()
 

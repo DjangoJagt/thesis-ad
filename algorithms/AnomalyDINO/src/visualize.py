@@ -118,7 +118,9 @@ def infer_vmax(exp_path, objects):
 
 def create_sample_plots(experiment_path, anomaly_maps_dir, seed, dataset, data_root, objects=None):
     # infer objects and anomalies, preprocessing does not matter
-    all_objects, object_anomalies, _, _ = get_dataset_info(dataset, preprocess = "informed")
+    all_objects, object_anomalies, _, _ = get_dataset_info(
+        dataset, preprocess="informed", data_root=data_root
+    )
     
     # Use provided objects or all objects from dataset
     if objects is None:

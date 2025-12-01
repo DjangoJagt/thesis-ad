@@ -1,7 +1,27 @@
+import os
+
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
+
+
+def discover_dataset_objects(data_root):
+    """Return sorted list of object folders found inside ``data_root``."""
+    if not data_root:
+        return []
+
+    if not os.path.isdir(data_root):
+        return []
+
+    objects = []
+    for entry in sorted(os.listdir(data_root)):
+        if entry.startswith('.'):
+            continue
+        entry_path = os.path.join(data_root, entry)
+        if os.path.isdir(entry_path):
+            objects.append(entry)
+    return objects
 
 
 def augment_image(img_ref, augmentation = "rotate", angles = [0, 45, 90, 135, 180, 225, 270, 315]):
@@ -69,13 +89,15 @@ def plot_ref_images(img_list, mask_list, vis_background_list, grid_size, save_pa
     plt.close()
 
 
-def get_dataset_info(dataset, preprocess):
+def get_dataset_info(dataset, preprocess, data_root=None):
 
     if preprocess not in ["informed", "agnostic", "masking_only", "informed_no_mask", "agnostic_no_mask", "force_no_mask_no_rotation", "force_mask_no_rotation", "force_no_mask_rotation", "force_mask_rotation"]:
         # masking only: deactivate rotation, apply masking like in informed/agnostic
         raise ValueError(f"Preprocessing '{preprocess}' not yet covered!")
     
-    if dataset == "MVTec":
+    dataset_key = dataset.lower()
+
+    if dataset_key == "mvtec":
         objects = ['bottle']
         # objects = ["bottle", "cable", "capsule", "carpet", "grid", "hazelnut", "leather", "metal_nut", "pill", "screw", "tile", "toothbrush", "transistor", "wood", "zipper"]
         object_anomalies = {"bottle": ["broken_large", "broken_small", "contamination"],
@@ -142,7 +164,7 @@ def get_dataset_info(dataset, preprocess):
         if preprocess in ["informed_no_mask", "agnostic_no_mask"]:
             masking_default = {o: False for o in objects}
 
-    elif dataset == "VisA":
+    elif dataset_key == "visa":
         objects = ["candle", "capsules", "cashew", "chewinggum", "fryum", "macaroni1", "macaroni2", "pcb1", "pcb2", "pcb3", "pcb4", "pipe_fryum"]
         object_anomalies = {"candle": ["bad"],
                             "capsules": ["bad"],
@@ -169,9 +191,10 @@ def get_dataset_info(dataset, preprocess):
             rotation_default = {o: False for o in objects}
 
     # added cognex dataset
-    elif dataset == "Cognex":
+    elif dataset_key == "cognex":
         # Exact folder name(s) of your product(s)
-        objects = [ "'t_Slagershuys_Kipdij_ovenschotel_teriyaki_11738318",
+        inferred_objects = discover_dataset_objects(data_root)
+        objects = inferred_objects if inferred_objects else [ "'t_Slagershuys_Kipdij_ovenschotel_teriyaki_11738318",
                     "Arla_Halfvolle_melk_lactofree_10760273",
                     "Elinas_Yoghurt_Griekse_stijl_aardbei_11400153",
                     "Heemskerk_Zoete_aardappelblokjes_11463862",
@@ -202,9 +225,10 @@ def get_dataset_info(dataset, preprocess):
             rotation_default = {o: False for o in objects}
 
     # added sick dataset
-    elif dataset == "sick":
+    elif dataset_key == "sick":
         # Sick dataset products
-        objects = ["10074656", "10074666", "10074790", "10762299", 
+        inferred_objects = discover_dataset_objects(data_root)
+        objects = inferred_objects if inferred_objects else ["10074656", "10074666", "10074790", "10762299", 
                    "11478299", "90006036", "90006124"]
         # Automatically map all objects to the 'issue' anomaly type
         object_anomalies = {obj: ["issue"] for obj in objects}

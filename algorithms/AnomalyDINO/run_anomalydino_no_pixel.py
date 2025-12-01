@@ -147,7 +147,7 @@ def main():
     args = parse_args()
 
     objects, object_anomalies, masking_default, rotation_default = get_dataset_info(
-        args.dataset, args.preprocess
+        args.dataset, args.preprocess, data_root=args.data_root
     )
     if args.objects:
         objects = [obj for obj in objects if obj in args.objects]
