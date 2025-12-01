@@ -62,7 +62,9 @@ if __name__=="__main__":
     print(f"Requested to run {len(args.shots)} (different) shot(s):", args.shots)
     print(f"Requested to repeat the experiments {args.num_seeds} time(s).")
 
-    objects, object_anomalies, masking_default, rotation_default = get_dataset_info(args.dataset, args.preprocess)
+    objects, object_anomalies, masking_default, rotation_default = get_dataset_info(
+        args.dataset, args.preprocess, data_root=args.data_root
+    )
     
     # Filter objects if specific ones are requested
     if args.objects is not None:

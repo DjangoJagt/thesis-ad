@@ -166,7 +166,9 @@ if __name__=="__main__":
     args.model_name = "dinov2_vit" + args.model_size.lower() + "14"
     model = get_model(args.model_name, args.device, smaller_edge_size=args.resolution)
     dataset = args.dataset
-    objects, object_anomalies, masking_default, rotation_default = get_dataset_info(args.dataset, args.preprocess)
+    objects, object_anomalies, masking_default, rotation_default = get_dataset_info(
+        args.dataset, args.preprocess, data_root=args.data_root
+    )
 
     # colors for anomaly map
     neon_violet = (0.5, 0.1, 0.5, 0.4)
