@@ -558,15 +558,14 @@ if __name__ == "__main__":
     auroc_sp_ls = []
     auroc_px_ls = []
 
-    threads = [None] * 20
-    idx = 0
+    threads = []
     for obj in tqdm(obj_list):
-        threads[idx] = threading.Thread(target=cal_score, args=(obj,))
-        threads[idx].start()
-        idx += 1
+        thread = threading.Thread(target=cal_score, args=(obj,))
+        thread.start()
+        threads.append(thread)
 
-    for i in range(idx):
-        threads[i].join()
+    for thread in threads:
+        thread.join()
 
     # Save anomaly maps as PNG if requested
     if args.save_anomaly_maps:
