@@ -104,7 +104,11 @@ if __name__ == "__main__":
         "--save_path", type=str, default=f"./results/", help="path to save results"
     )
     parser.add_argument(
-        "--class_name", type=str, default="None", help="class_name"
+        "--class_name",
+        type=str,
+        nargs="+",
+        default=["None"],
+        help="One or more class names to evaluate (default: all classes)",
     )
     parser.add_argument(
         "--round", type=int, default=0, help="round"
@@ -163,6 +167,9 @@ if __name__ == "__main__":
     dataset_dir = args.data_path
     device = args.device
     k_shot = args.k_shot
+    class_filters = []
+    if not (len(args.class_name) == 1 and args.class_name[0].lower() == "none"):
+        class_filters = args.class_name
 
     # If lightweight CPU mode requested, limit OpenMP/MKL and PyTorch threads to reduce RAM/CPU pressure
     if args.light and device == "cpu":
@@ -351,18 +358,50 @@ if __name__ == "__main__":
     pin_memory = False if device == "cpu" else True
     
     # Filter by class name BEFORE limiting dataset size
-    if args.class_name != "None":
-        # Filter dataset to only include images matching class_name
+    if class_filters:
+        # Filter dataset to only include images matching any requested class names
         filtered_indices = []
+        class_filter_set = set(class_filters)
+        class_counts = {cls: 0 for cls in class_filters}
+
         for idx in range(len(test_data)):
             item = test_data[idx]
-            if args.class_name in item["img_path"]:
+            matched_class = None
+
+            if isinstance(item, dict):
+                cls_value = item.get("cls_name")
+                if cls_value in class_filter_set:
+                    matched_class = cls_value
+                else:
+                    img_path = item.get("img_path", "")
+                    for cls in class_filters:
+                        if cls in img_path:
+                            matched_class = cls
+                            break
+            else:
+                cls_value = getattr(item, "cls_name", None)
+                if cls_value in class_filter_set:
+                    matched_class = cls_value
+                else:
+                    img_path = getattr(item, "img_path", "")
+                    for cls in class_filters:
+                        if cls in img_path:
+                            matched_class = cls
+                            break
+
+            if matched_class is not None:
                 filtered_indices.append(idx)
-        
+                class_counts[matched_class] = class_counts.get(matched_class, 0) + 1
+
         if len(filtered_indices) == 0:
-            raise ValueError(f"No images found for class '{args.class_name}'. Check class name spelling.")
-        
-        print(f"[Info] Filtered to {len(filtered_indices)} images for class '{args.class_name}'")
+            raise ValueError(
+                "No images found for requested classes: " + ", ".join(class_filters)
+            )
+
+        summary = ", ".join(f"{cls}:{class_counts.get(cls, 0)}" for cls in class_filters)
+        print(
+            f"[Info] Filtered to {len(filtered_indices)} images across classes [{summary}]"
+        )
         test_data_filtered = torch.utils.data.Subset(test_data, filtered_indices)
     else:
         test_data_filtered = test_data
