@@ -29,13 +29,13 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     
     # Detect horizontal lines in top and bottom regions
     roi_h_top = int(H * 0.08)
-    roi_h_bottom = int(H * 0.15)
+    roi_h_bottom = int(H * 0.13)
     cv2.line(debug_img, (0, roi_h_top), (W, roi_h_top), (255, 0, 0), 1)
     cv2.line(debug_img, (0, H-roi_h_bottom), (W, H-roi_h_bottom), (255, 0, 0), 1)
     
     def find_vertical_lines(roi_edges, is_left, offset_x):
         lines = cv2.HoughLinesP(roi_edges, 1, np.pi / 180, threshold=50, 
-                                minLineLength=H // 5, maxLineGap=60)
+                                minLineLength=H // 8, maxLineGap=60)
         if lines is None:
             return None
         
@@ -46,7 +46,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
             x1, y1, x2, y2 = line[0]
             angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
             
-            if 75 < angle < 105:  # Vertical line
+            if 87 < angle < 93:  # Vertical line
                 avg_x = (x1 + x2) / 2 + offset_x
                 cv2.line(debug_img, (x1 + offset_x, y1), (x2 + offset_x, y2), (0, 255, 255), 2)
                 
@@ -69,7 +69,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
             x1, y1, x2, y2 = line[0]
             angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
             
-            if angle < 8 or angle > 172:  # Horizontal line
+            if angle < 3 or angle > 177:  # Horizontal line
                 avg_y = (y1 + y2) / 2 + offset_y
                 cv2.line(debug_img, (x1, y1 + offset_y), (x2, y2 + offset_y), (255, 255, 0), 2)
                 
