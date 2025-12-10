@@ -6,13 +6,13 @@ from collections import defaultdict
 
 # --- INSTELLINGEN ---
 SOURCE_DIR = Path("sick_data_staging")       # Waar je foto's nu staan
-TARGET_DIR = Path("sick_data_issues")        # Waar de nieuwe structuur moet komen
+TARGET_DIR = Path("sick_data_issues_2")        # Waar de nieuwe structuur moet komen
 ISSUE_LIST_FILE = "flagged_quality_issues.txt"
 
 # MINIMUM AANTAL GOEDE FOTO'S
 # Als een SKU minder dan dit aantal 'goede' foto's heeft, wordt hij overgeslagen.
 # Voor anomaly detection wil je er minimaal 6-10 hebben (zodat je train/test kunt splitten).
-MIN_GOOD_IMAGES = 4 
+MIN_GOOD_IMAGES = 3
 
 def main():
     # 1. Lees het issue bestand in
