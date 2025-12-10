@@ -121,6 +121,32 @@ class DINOv2Wrapper(VisionTransformerWrapper):
         grid_size = (cropped_height // self.model.patch_size, cropped_width // self.model.patch_size)
         return image_tensor, grid_size
     
+    def preprocess_image_for_masking(self, img):
+        """
+        Preprocess image to match DINOv2 dimensions (resize and crop) but return as numpy array for Hough masking.
+        This ensures Hough masking operates on the same image dimensions as feature extraction.
+        """
+        if isinstance(img, str):
+            img = Image.open(img).convert("RGB")
+        elif isinstance(img, np.ndarray):
+            img = Image.fromarray(img)
+        
+        # Apply resize transform (without normalization)
+        resize_transform = transforms.Resize(size=self.smaller_edge_size, 
+                                              interpolation=transforms.InterpolationMode.BICUBIC, 
+                                              antialias=True)
+        img_resized = resize_transform(img)
+        
+        # Convert to numpy array
+        img_array = np.array(img_resized)
+        
+        # Crop to dimensions that are a multiple of the patch size
+        height, width = img_array.shape[:2]
+        cropped_width = width - width % self.model.patch_size
+        cropped_height = height - height % self.model.patch_size
+        img_cropped = img_array[:cropped_height, :cropped_width]
+        
+        return img_cropped
 
     def extract_features(self, image_tensor):
         with torch.inference_mode():
