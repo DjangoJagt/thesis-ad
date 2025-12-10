@@ -129,11 +129,11 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06, debug=False
         intercept = y1 - slope * x1
         return (0, int(intercept)), (W, int(slope * W + intercept))
     
-    # Extrapolate lines or use fallback positions (12% inset from edges)
+    # Extrapolate lines or use fallback positions (matches masking.py)
     l_pts = extrapolate_line(l_line) or ((int(W*0.12), 0), (int(W*0.12), H))
     r_pts = extrapolate_line(r_line, W-roi_w_right) or ((int(W*0.88), 0), (int(W*0.88), H))
-    t_pts = extrapolate_horizontal_line(t_line) or ((0, int(H*0.12)), (W, int(H*0.12)))
-    b_pts = extrapolate_horizontal_line(b_line, H-roi_h_bottom) or ((0, int(H*0.88)), (W, int(H*0.88)))
+    t_pts = extrapolate_horizontal_line(t_line) or ((0, int(H*0.02)), (W, int(H*0.02)))
+    b_pts = extrapolate_horizontal_line(b_line, H-roi_h_bottom) or ((0, int(H*0.92)), (W, int(H*0.92)))
     
     if debug:
         # Draw final rails on debug image (green lines)
