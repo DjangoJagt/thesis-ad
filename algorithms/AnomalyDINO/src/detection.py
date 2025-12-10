@@ -10,6 +10,7 @@ import torch
 
 from src.utils import augment_image, dists2map, plot_ref_images
 from src.post_eval import mean_top1p
+from src.hough_masking import robust_industrial_crop
 
 def run_anomaly_detection(
         model,
@@ -82,6 +83,11 @@ def run_anomaly_detection(
             img_ref = f"{img_ref_folder}{img_ref_n}"
             image_ref = cv2.cvtColor(cv2.imread(img_ref, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
 
+            # Apply Hough line masking BEFORE rotation (if enabled)
+            # This masks the original image, then rotation augments the masked version
+            if mask_ref_images and masking:
+                image_ref = robust_industrial_crop(image_ref)
+            
             # augment reference image (if applicable)...
             if rotation:
                 img_augmented = augment_image(image_ref)
@@ -89,11 +95,16 @@ def run_anomaly_detection(
                 img_augmented = [image_ref]
             for i in range(len(img_augmented)):
                 image_ref = img_augmented[i]
+                
                 image_ref_tensor, grid_size1 = model.prepare_image(image_ref)
                 features_ref_i = model.extract_features(image_ref_tensor)
                 
-                # compute background mask and discard background patches
-                mask_ref = model.compute_background_mask(features_ref_i, grid_size1, threshold=10, masking_type=(mask_ref_images and masking))
+                # If Hough masking was applied, use all features (image already masked)
+                # Otherwise, let DINOv2 compute feature-based background mask
+                if mask_ref_images and masking:
+                    mask_ref = np.ones(features_ref_i.shape[0], dtype=bool)
+                else:
+                    mask_ref = model.compute_background_mask(features_ref_i, grid_size1, threshold=10, masking_type=(mask_ref_images and masking))
                 features_ref.append(features_ref_i[mask_ref])
                 if save_examples:
                     images_ref.append(image_ref)
@@ -144,12 +155,18 @@ def run_anomaly_detection(
 
                 # Extract test features
                 image_test = cv2.cvtColor(cv2.imread(image_test_path, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+                
+                # Apply Hough line masking if enabled (masks pixels outside rails to black)
+                if masking:
+                    image_test = robust_industrial_crop(image_test)
+                
                 image_tensor2, grid_size2 = model.prepare_image(image_test)
                 features2 = model.extract_features(image_tensor2)
 
-                # Compute background mask
+                # If Hough masking was applied, use all features (image already masked)
+                # Otherwise, optionally apply DINOv2 feature-based background mask
                 if masking:
-                    mask2 = model.compute_background_mask(features2, grid_size2, threshold=10, masking_type=masking)
+                    mask2 = np.ones(features2.shape[0], dtype=bool)
                 else:
                     mask2 = np.ones(features2.shape[0], dtype=bool)
                 if save_examples and idx < 3:
