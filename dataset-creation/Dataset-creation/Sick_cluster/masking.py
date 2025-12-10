@@ -7,7 +7,7 @@ import math
 VALID_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 DEFAULT_CLASS_DIRS = ["10074656", "10468098", "11421515", "90006036", "10075934", "10760941"]
 DEFAULT_SUBPATH = Path("test") / "issue"
-
+# DEFAULT_SUBPATH = Path("train") / "good"
 def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     """Detect vertical rails using Hough Transform and mask everything outside them black."""
     H, W = image.shape[:2]
@@ -29,24 +29,24 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     
     # Detect horizontal lines in top and bottom regions
     roi_h_top = int(H * 0.08)
-    roi_h_bottom = int(H * 0.15)
+    roi_h_bottom = int(H * 0.13)
     cv2.line(debug_img, (0, roi_h_top), (W, roi_h_top), (255, 0, 0), 1)
     cv2.line(debug_img, (0, H-roi_h_bottom), (W, H-roi_h_bottom), (255, 0, 0), 1)
     
     def find_vertical_lines(roi_edges, is_left, offset_x):
         lines = cv2.HoughLinesP(roi_edges, 1, np.pi / 180, threshold=50, 
-                                minLineLength=H // 5, maxLineGap=60)
+                                minLineLength=H // 8, maxLineGap=60)
         if lines is None:
             return None
         
         best_line = None
         best_x_score = -1 if is_left else 99999
-        
+     
         for line in lines:
             x1, y1, x2, y2 = line[0]
             angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
             
-            if 75 < angle < 105:  # Vertical line
+            if 87 < angle < 93:  # Vertical line
                 avg_x = (x1 + x2) / 2 + offset_x
                 cv2.line(debug_img, (x1 + offset_x, y1), (x2 + offset_x, y2), (0, 255, 255), 2)
                 
@@ -58,7 +58,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     
     def find_horizontal_lines(roi_edges, is_top, offset_y):
         lines = cv2.HoughLinesP(roi_edges, 1, np.pi / 180, threshold=50, 
-                                minLineLength=W // 6, maxLineGap=80)
+                                minLineLength=W // 6, maxLineGap=60)
         if lines is None:
             return None
         
@@ -69,7 +69,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
             x1, y1, x2, y2 = line[0]
             angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
             
-            if angle < 8 or angle > 172:  # Horizontal line
+            if angle < 3 or angle > 177:  # Horizontal line
                 avg_y = (y1 + y2) / 2 + offset_y
                 cv2.line(debug_img, (x1, y1 + offset_y), (x2, y2 + offset_y), (255, 255, 0), 2)
                 
@@ -117,6 +117,49 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     cv2.line(debug_img, t_pts[0], t_pts[1], (0, 255, 0), 2)
     cv2.line(debug_img, b_pts[0], b_pts[1], (0, 255, 0), 2)
     
+    # Draw angle range visualization lines (purple) starting from blue line midpoints
+    left_mid_x = roi_w_left
+    left_mid_y = H // 2
+    top_mid_x = W // 2
+    top_mid_y = roi_h_top
+    
+    # Length of the line to draw (make it long enough to cover the screen)
+    line_len = 1000 
+
+    # --- Vertical Lines (75° and 105°) ---
+    # In OpenCV: 90° is straight down. 
+    # So 75° leans slightly right, 105° leans slightly left (or vice versa depending on your origin)
+    # We use standard trig: x = x0 + L*cos(a), y = y0 + L*sin(a)
+
+    # 75 Degree Line
+    angle_75 = math.radians(87) 
+    x_end_75 = int(left_mid_x + line_len * math.cos(angle_75))
+    y_end_75 = int(left_mid_y + line_len * math.sin(angle_75))
+    cv2.line(debug_img, (left_mid_x, left_mid_y), (x_end_75, y_end_75), (255, 0, 255), 2)
+
+    # 105 Degree Line
+    angle_105 = math.radians(93)
+    x_end_105 = int(left_mid_x + line_len * math.cos(angle_105))
+    y_end_105 = int(left_mid_y + line_len * math.sin(angle_105))
+    cv2.line(debug_img, (left_mid_x, left_mid_y), (x_end_105, y_end_105), (255, 0, 255), 2)
+
+
+    # --- Horizontal Lines (8° and 172°) ---
+    # In OpenCV: 0° is straight Right.
+
+    # 8 Degree Line (Slightly down-right)
+    angle_8 = math.radians(3)
+    x_end_8 = int(top_mid_x + line_len * math.cos(angle_8))
+    y_end_8 = int(top_mid_y + line_len * math.sin(angle_8))
+    cv2.line(debug_img, (top_mid_x, top_mid_y), (x_end_8, y_end_8), (255, 0, 255), 2)
+
+    # 172 Degree Line (Slightly down-left)
+    # Note: 172° points to the Left. 
+    angle_172 = math.radians(177)
+    x_end_172 = int(top_mid_x + line_len * math.cos(angle_172))
+    y_end_172 = int(top_mid_y + line_len * math.sin(angle_172))
+    cv2.line(debug_img, (top_mid_x, top_mid_y), (x_end_172, y_end_172), (255, 0, 255), 2)
+
     # Create output: original image with everything outside the vertical rails masked black
     masked_image = image.copy()
     
