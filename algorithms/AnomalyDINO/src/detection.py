@@ -10,7 +10,7 @@ import torch
 
 from src.utils import augment_image, dists2map, plot_ref_images
 from src.post_eval import mean_top1p
-from src.hough_masking import compute_hough_feature_mask
+from src.hough_masking import compute_hough_feature_mask, apply_hough_pixel_masking
 
 def run_anomaly_detection(
         model,
@@ -83,6 +83,10 @@ def run_anomaly_detection(
             img_ref = f"{img_ref_folder}{img_ref_n}"
             image_ref = cv2.cvtColor(cv2.imread(img_ref, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
 
+            # Apply pixel-level masking to reference image BEFORE rotation (if applicable)
+            if mask_ref_images and masking and rotation:
+                image_ref = apply_hough_pixel_masking(image_ref)
+            
             # augment reference image (if applicable)...
             if rotation:
                 img_augmented = augment_image(image_ref)
@@ -94,14 +98,17 @@ def run_anomaly_detection(
                 image_ref_tensor, grid_size1 = model.prepare_image(image_ref)
                 features_ref_i = model.extract_features(image_ref_tensor)
                 
-                # Apply feature-level masking (Hough or DINOv2)
-                if mask_ref_images and masking:
-                    # Preprocess image to match DINOv2 dimensions before Hough masking
+                # Apply feature-level masking only if NOT using pixel-level masking with rotation
+                if mask_ref_images and masking and not rotation:
+                    # Feature-level masking for non-rotated reference images
                     preprocessed_img = model.preprocess_image_for_masking(image_ref)
                     mask_ref = compute_hough_feature_mask(preprocessed_img, grid_size1)
+                elif mask_ref_images and masking and rotation:
+                    # Pixel-level masking was applied, use all features (no feature-level mask needed)
+                    mask_ref = np.ones(features_ref_i.shape[0], dtype=bool)
                 else:
-                    # Use DINOv2 feature-based background mask
-                    mask_ref = model.compute_background_mask(features_ref_i, grid_size1, threshold=10, masking_type=(mask_ref_images and masking))
+                    # No masking requested - use all features
+                    mask_ref = np.ones(features_ref_i.shape[0], dtype=bool)
                 features_ref.append(features_ref_i[mask_ref])
                 if save_examples:
                     images_ref.append(image_ref)

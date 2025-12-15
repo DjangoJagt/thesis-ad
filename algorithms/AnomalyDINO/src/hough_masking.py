@@ -163,3 +163,150 @@ def compute_hough_feature_mask(image, grid_size):
     return patch_mask
 
 
+def apply_hough_pixel_masking(image):
+    """
+    Apply Hough line detection and set pixels outside the detected rails to black.
+    This is used for reference images before rotation augmentation.
+    
+    Args:
+        image: Input image (RGB numpy array)
+        
+    Returns:
+        masked_image: Image with pixels outside rails set to black (RGB numpy array)
+    """
+    H, W = image.shape[:2]
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) if image.ndim == 3 else image
+    
+    # Edge detection with automatic Canny threshold
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    v = np.median(blur)
+    lower = int(max(0, (1.0 - 0.33) * v))
+    upper = int(min(255, (1.0 + 0.33) * v))
+    edges = cv2.Canny(blur, lower, upper)
+    
+    # Define search regions
+    roi_w_left = int(W * 0.31)
+    roi_w_right = int(W * 0.28) 
+    roi_h_top = int(H * 0.08)
+    roi_h_bottom = int(H * 0.13)
+    
+    def find_vertical_lines(roi_edges, is_left, offset_x):
+        lines = cv2.HoughLinesP(roi_edges, 1, np.pi / 180, threshold=50, 
+                                minLineLength=H // 8, maxLineGap=60)
+        if lines is None:
+            return None
+        
+        best_line = None
+        best_x_score = -1 if is_left else 99999
+     
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
+            
+            if 87 < angle < 93:
+                avg_x = (x1 + x2) / 2 + offset_x
+                if (is_left and avg_x > best_x_score) or (not is_left and avg_x < best_x_score):
+                    best_x_score = avg_x
+                    best_line = (x1, y1, x2, y2)
+        
+        return best_line
+    
+    def find_horizontal_lines(roi_edges, is_top, offset_y):
+        lines = cv2.HoughLinesP(roi_edges, 1, np.pi / 180, threshold=50, 
+                                minLineLength=W // 6, maxLineGap=60)
+        if lines is None:
+            return None
+        
+        best_line = None
+        best_y_score = -1 if is_top else 99999
+        
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
+            
+            if angle < 3 or angle > 177:
+                avg_y = (y1 + y2) / 2 + offset_y
+                if (is_top and avg_y > best_y_score) or (not is_top and avg_y < best_y_score):
+                    best_y_score = avg_y
+                    best_line = (x1, y1, x2, y2)
+        
+        return best_line
+    
+    # Find lines
+    l_line = find_vertical_lines(edges[:, 0:roi_w_left], True, 0)
+    r_line = find_vertical_lines(edges[:, W-roi_w_right:W], False, W-roi_w_right)
+    t_line = find_horizontal_lines(edges[0:roi_h_top, :], True, 0)
+    b_line = find_horizontal_lines(edges[H-roi_h_bottom:H, :], False, H-roi_h_bottom)
+    
+    def extrapolate_line(line, offset_x=0):
+        if line is None: 
+            return None
+        x1, y1, x2, y2 = line
+        x1, x2 = x1 + offset_x, x2 + offset_x
+        if x2 == x1: 
+            return (x1, 0), (x1, H)
+        slope = (y2 - y1) / (x2 - x1)
+        intercept = y1 - slope * x1
+        return (int((0 - intercept) / slope), 0), (int((H - intercept) / slope), H)
+    
+    def extrapolate_horizontal_line(line, offset_y=0):
+        if line is None: 
+            return None
+        x1, y1, x2, y2 = line
+        y1, y2 = y1 + offset_y, y2 + offset_y
+        if y2 == y1: 
+            return (0, y1), (W, y1)
+        slope = (y2 - y1) / (x2 - x1)
+        intercept = y1 - slope * x1
+        return (0, int(intercept)), (W, int(slope * W + intercept))
+    
+    # Extrapolate lines or use fallback positions
+    l_pts = extrapolate_line(l_line) or ((int(W*0.12), 0), (int(W*0.12), H))
+    r_pts = extrapolate_line(r_line, W-roi_w_right) or ((int(W*0.88), 0), (int(W*0.88), H))
+    t_pts = extrapolate_horizontal_line(t_line) or ((0, int(H*0.02)), (W, int(H*0.02)))
+    b_pts = extrapolate_horizontal_line(b_line, H-roi_h_bottom) or ((0, int(H*0.92)), (W, int(H*0.92)))
+    
+    # Create masked image with pixels outside rails set to black
+    masked_image = image.copy()
+    
+    def get_x_at_y(pts, y):
+        (x1, y1), (x2, y2) = pts
+        if x1 == x2: 
+            return x1
+        slope = (x2 - x1) / (y2 - y1)
+        return int(x1 + slope * (y - y1))
+    
+    def get_y_at_x(pts, x):
+        (x1, y1), (x2, y2) = pts
+        if y1 == y2: 
+            return y1
+        slope = (y2 - y1) / (x2 - x1)
+        return int(y1 + slope * (x - x1))
+    
+    # Mask left side (x < left_line)
+    for y in range(H):
+        left_x = get_x_at_y(l_pts, y)
+        if left_x > 0:
+            masked_image[y, :left_x] = 0
+    
+    # Mask right side (x > right_line)
+    for y in range(H):
+        right_x = get_x_at_y(r_pts, y)
+        if right_x < W:
+            masked_image[y, right_x:] = 0
+    
+    # Mask top side (y < top_line)
+    for x in range(W):
+        top_y = get_y_at_x(t_pts, x)
+        if top_y > 0:
+            masked_image[:top_y, x] = 0
+    
+    # Mask bottom side (y > bottom_line)
+    for x in range(W):
+        bottom_y = get_y_at_x(b_pts, x)
+        if bottom_y < H:
+            masked_image[bottom_y:, x] = 0
+    
+    return masked_image
+
+
