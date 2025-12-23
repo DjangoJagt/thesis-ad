@@ -1,0 +1,12 @@
+# Picnic DWH Configuration for NL Local Environment
+dwh:
+  account: "uj82639.eu-west-1"
+  database: "picnic_nl_prod"
+  warehouse: "ANALYSIS"
+  role: "analyst"
+  username: !ENV_dwh_username
+  query_tag:
+    repository: sick-tote-dataset
+    project_name: anomaly-training
+picnic-client:
+  keycloak: null

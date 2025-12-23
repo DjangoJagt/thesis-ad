@@ -5,7 +5,7 @@ import numpy as np
 import math
 
 VALID_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
-DEFAULT_CLASS_DIRS = ["10074656", "10468098", "11421515", "90006036", "10075934", "10760941"]
+DEFAULT_CLASS_DIRS = ["12474058"]# ["10074656", "10468098", "11421515", "90006036", "10075934", "10760941"]
 DEFAULT_SUBPATH = Path("test") / "issue"
 
 def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
@@ -23,7 +23,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     
     # Detect vertical lines in left and right regions
     roi_w_left = int(W * 0.31)
-    roi_w_right = int(W * 0.28) 
+    roi_w_right = int(W * 0.25) 
     cv2.line(debug_img, (roi_w_left, 0), (roi_w_left, H), (255, 0, 0), 1)
     cv2.line(debug_img, (W-roi_w_right, 0), (W-roi_w_right, H), (255, 0, 0), 1)
     
@@ -35,7 +35,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
     
     def find_vertical_lines(roi_edges, is_left, offset_x):
         lines = cv2.HoughLinesP(roi_edges, 1, np.pi / 180, threshold=50, 
-                                minLineLength=H // 8, maxLineGap=60)
+                                minLineLength=H // 7, maxLineGap=60)
         if lines is None:
             return None
         
@@ -46,7 +46,7 @@ def robust_industrial_crop(image, output_size=None, wall_ratio=0.06):
             x1, y1, x2, y2 = line[0]
             angle = abs(math.atan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
             
-            if 87 < angle < 93:  # Vertical line
+            if 88 < angle < 92:  # Vertical line
                 avg_x = (x1 + x2) / 2 + offset_x
                 cv2.line(debug_img, (x1 + offset_x, y1), (x2 + offset_x, y2), (0, 255, 255), 2)
                 

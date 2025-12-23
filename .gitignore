@@ -82,6 +82,7 @@ algorithms/*/data/*/
 **/*.h5
 **/*.hdf5
 **/*.tfrecord
+**/*.html
 **/images/
 **/raw/
 **/output/
@@ -96,6 +97,7 @@ sick_data_issues/
 # ============================================
 **/*.jpg
 **/*.jpeg
+**/*.JPEG
 **/*.png
 **/*.bmp
 **/*.tiff
