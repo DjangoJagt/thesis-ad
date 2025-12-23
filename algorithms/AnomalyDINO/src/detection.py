@@ -100,9 +100,8 @@ def run_anomaly_detection(
                 
                 # Apply feature-level masking only if NOT using pixel-level masking with rotation
                 if mask_ref_images and masking and not rotation:
-                    # Feature-level masking for non-rotated reference images
-                    preprocessed_img = model.preprocess_image_for_masking(image_ref)
-                    mask_ref = compute_hough_feature_mask(preprocessed_img, grid_size1)
+                    # Feature-level masking for non-rotated reference images (at full resolution)
+                    mask_ref = compute_hough_feature_mask(image_ref, grid_size1)
                 elif mask_ref_images and masking and rotation:
                     # Pixel-level masking was applied, use all features (no feature-level mask needed)
                     mask_ref = np.ones(features_ref_i.shape[0], dtype=bool)
@@ -165,9 +164,8 @@ def run_anomaly_detection(
 
                 # Apply feature-level masking (Hough or DINOv2)
                 if masking:
-                    # Preprocess image to match DINOv2 dimensions before Hough masking
-                    preprocessed_test = model.preprocess_image_for_masking(image_test)
-                    mask2 = compute_hough_feature_mask(preprocessed_test, grid_size2)
+                    # Compute Hough mask on full-resolution image, then downsample to grid_size
+                    mask2 = compute_hough_feature_mask(image_test, grid_size2)
                 else:
                     # No masking - use all features
                     mask2 = np.ones(features2.shape[0], dtype=bool)
@@ -200,7 +198,8 @@ def run_anomaly_detection(
                     torch.cuda.synchronize() # Synchronize CUDA kernels before measuring time
                 inf_time = time.time() - start_time
                 inference_times[f"{type_anomaly}/{img_test_nr}"] = inf_time
-                anomaly_scores[f"{type_anomaly}/{img_test_nr}"] = mean_top1p(output_distances.flatten())
+                # Use distances (masked patches only) for consistent scoring with visualization
+                anomaly_scores[f"{type_anomaly}/{img_test_nr}"] = mean_top1p(distances)
 
                 # Save the anomaly maps (raw as .npy or full resolution .tiff files)
                 img_test_nr = img_test_nr.split(".")[0]

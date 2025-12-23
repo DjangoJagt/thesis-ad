@@ -437,6 +437,10 @@ def get_objects_from_dataset(dataset, dataset_base_dir=None):
     elif dataset_key == "sick":
         objects = inferred_objects if inferred_objects else ["10074656", "10074666", "10074790", "10762299", 
                    "11478299", "90006036", "90006124"]
+    elif dataset_key == "custom_1":
+        objects = inferred_objects if inferred_objects else []
+    elif dataset_key == "custom_2":
+        objects = inferred_objects if inferred_objects else []
     else:
         raise ValueError(f"Dataset '{dataset}' not supported in post_eval.py")
     return objects

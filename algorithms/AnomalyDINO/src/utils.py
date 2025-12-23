@@ -249,6 +249,54 @@ def get_dataset_info(dataset, preprocess, data_root=None):
         else:
             rotation_default = {o: False for o in objects}
 
+    # added custom_1 dataset
+    elif dataset_key == "custom_1":
+        # Custom dataset 1 products
+        inferred_objects = discover_dataset_objects(data_root)
+        objects = inferred_objects if inferred_objects else []
+        # Automatically map all objects to the 'issue' anomaly type
+        object_anomalies = {obj: ["issue"] for obj in objects}
+
+        # --- Preprocessing Configuration ---
+        
+        # Masking Logic:
+        # Default is True, unless explicitly disabled with '_no_mask'
+        if preprocess in ["informed_no_mask", "agnostic_no_mask"]:
+            masking_default = {o: False for o in objects}
+        else:
+            masking_default = {o: True for o in objects} 
+
+        # Rotation Logic:
+        # Agnostic = try rotation. Informed/others = no rotation (safer start).
+        if preprocess in ["agnostic", "agnostic_no_mask"]:
+            rotation_default = {o: True for o in objects}
+        else:
+            rotation_default = {o: False for o in objects}
+
+    # added custom_2 dataset
+    elif dataset_key == "custom_2":
+        # Custom dataset 2 products
+        inferred_objects = discover_dataset_objects(data_root)
+        objects = inferred_objects if inferred_objects else []
+        # Automatically map all objects to the 'issue' anomaly type
+        object_anomalies = {obj: ["issue"] for obj in objects}
+
+        # --- Preprocessing Configuration ---
+        
+        # Masking Logic:
+        # Default is True, unless explicitly disabled with '_no_mask'
+        if preprocess in ["informed_no_mask", "agnostic_no_mask"]:
+            masking_default = {o: False for o in objects}
+        else:
+            masking_default = {o: True for o in objects} 
+
+        # Rotation Logic:
+        # Agnostic = try rotation. Informed/others = no rotation (safer start).
+        if preprocess in ["agnostic", "agnostic_no_mask"]:
+            rotation_default = {o: True for o in objects}
+        else:
+            rotation_default = {o: False for o in objects}
+
     else:
         raise ValueError(f"Dataset '{dataset}' not yet covered!")
 
