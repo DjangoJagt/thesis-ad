@@ -22,7 +22,7 @@ from Sick_dataset.utils.crop import robust_industrial_crop
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DATASET_DIR = SCRIPTS_DIR.parent
 CSV_PATH = DATASET_DIR / "manifest_analyzed_leakage.csv"
-HTML_OUTPUT = DATASET_DIR / "verification_report_leakage.html"
+HTML_OUTPUT = DATASET_DIR / "reports" / "verification_report_leakage.html"
 
 def get_image_src(rel_path, do_crop=False):
     """

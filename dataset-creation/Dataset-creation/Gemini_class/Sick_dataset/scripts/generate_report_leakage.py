@@ -14,6 +14,7 @@ import html
 import argparse
 import cv2
 import base64
+import json
 
 # This specific import caused the crash. Now it will work.
 from Sick_dataset.utils.crop import robust_industrial_crop
@@ -21,8 +22,8 @@ from Sick_dataset.utils.crop import robust_industrial_crop
 # --- CONFIGURATION ---
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DATASET_DIR = SCRIPTS_DIR.parent
-CSV_PATH = DATASET_DIR / "manifest_analyzed_leakage.csv"
-HTML_OUTPUT = DATASET_DIR / "verification_report_leakage.html"
+CSV_PATH = DATASET_DIR / "manifest_analyzed_gt_leakage_gpt5.1.csv"
+HTML_OUTPUT = DATASET_DIR / "reports" / "verification_report_leakage.html"
 
 def get_image_src(rel_path, do_crop=False):
     """
@@ -39,7 +40,7 @@ def get_image_src(rel_path, do_crop=False):
 
     if not do_crop:
         # Standard mode: just return path for browser to load locally
-        return rel_path
+        return f"../{rel_path}"
 
     # --- CROPPING MODE ---
     if not full_path.exists():
@@ -83,13 +84,52 @@ def generate_html(crop_mode=False):
     normal_count = (df["ai_status"] == "NORMAL").sum()
     anomalous_count = (df["ai_status"] == "ANOMALOUS").sum()
 
+    has_correct_col = "is_correct" in df.columns
+    if has_correct_col:
+        def normalize_correct(val):
+            if pd.isna(val):
+                return None
+            if isinstance(val, bool):
+                return val
+            val_str = str(val).strip().lower()
+            if val_str in ["true", "1", "yes", "y"]:
+                return True
+            if val_str in ["false", "0", "no", "n"]:
+                return False
+            return None
+        df["is_correct_norm"] = df["is_correct"].apply(normalize_correct)
+    else:
+        df["is_correct_norm"] = None
+
+    # Unique products and SKUs for filters
+    products = sorted({str(p) for p in df.get("product_name", pd.Series(dtype=str)).fillna("Unknown Product")})
+    product_options_html = '\n'.join(
+        [f'<option value="ALL">All products</option>'] +
+        [f'<option value="{html.escape(p)}">{html.escape(p)}</option>' for p in products]
+    )
+
+    skus = sorted({str(s) for s in df.get("sku", pd.Series(dtype=str)).fillna("Unknown SKU")})
+    search_options_html = '\n'.join(
+        [f'<option value="{html.escape(p)}"></option>' for p in products] +
+        [f'<option value="{html.escape(s)}"></option>' for s in skus]
+    )
+
+    products_json = json.dumps(products)
+    skus_json = json.dumps(skus)
+
     mode_text = "CROPPED VIEW" if crop_mode else "ORIGINAL VIEW"
+    incorrect_filter_html = """
+            <div class=\"btn-row-secondary\">
+                <button id=\"incorrectToggle\" class=\"btn btn-inc\" onclick=\"toggleIncorrectOnly()\">Only Incorrect</button>
+            </div>
+            """ if has_correct_col else ""
     print(f"Generating report ({mode_text}): {total} images...")
     
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="UTF-8">
         <title>AI Defect Verification ({mode_text})</title>
         <style>
             body {{ font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #e0e0e0; padding: 10px; margin: 0; }}
@@ -100,7 +140,10 @@ def generate_html(crop_mode=False):
                 display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                 position: sticky; top: 10px; z-index: 100;
             }}
-            .stats span {{ margin-right: 15px; font-weight: bold; }}
+            .stats {{ display: flex; flex-direction: column; gap: 6px; }}
+            .stats .heading {{ font-weight: 700; }}
+            .stats .counts {{ display: flex; flex-wrap: nowrap; gap: 12px; }}
+            .stats .counts span {{ font-weight: bold; white-space: nowrap; }}
             .mode-badge {{ background: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }}
             
             .btn {{ padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 5px; }}
@@ -108,6 +151,12 @@ def generate_html(crop_mode=False):
             .btn-all {{ background: #6c757d; color: white; }}
             .btn-norm {{ background: #28a745; color: white; }}
             .btn-anom {{ background: #dc3545; color: white; }}
+            .btn-inc {{ background: #f0ad4e; color: #1f1f1f; }}
+            .btn-inc.active {{ background: #dc3545; color: white; }}
+
+            .btn-group {{ display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; }}
+            .filters {{ margin-left: 100px; }}
+            .btn-row-secondary {{ display: flex; justify-content: flex-end; margin-top: 10px; width: 100%; }}
 
             .grid {{ display: grid; grid-template-columns: 1fr; gap: 20px; }}
             
@@ -117,8 +166,12 @@ def generate_html(crop_mode=False):
                 padding: 10px 15px; border-bottom: 1px solid #eee; 
                 display: flex; justify-content: space-between; align-items: center; background: #fdfdfd;
             }}
+            .header-right {{ display: flex; align-items: center; gap: 10px; }}
             .product-name {{ font-size: 1.1em; font-weight: bold; color: #333; }}
             .sku-badge {{ background: #eee; padding: 2px 8px; border-radius: 4px; color: #555; font-size: 0.9em; }}
+            .correct-badge {{ padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 0.8em; text-transform: uppercase; }}
+            .correct-true {{ background: #d4edda; color: #155724; }}
+            .correct-false {{ background: #f8d7da; color: #721c24; }}
 
             .images {{ display: flex; height: 500px; background: #f9f9f9; }} 
             .img-container {{ flex: 1; border-right: 1px solid #fff; position: relative; }}
@@ -147,16 +200,96 @@ def generate_html(crop_mode=False):
         </style>
         
         <script>
-            function filterCards(status) {{
-                const cards = document.querySelectorAll('.card');
+            let currentStatus = 'ALL';
+            let currentProduct = 'ALL';
+            let currentQuery = '';
+            const HAS_CORRECT = {str(has_correct_col).lower()};
+            let showIncorrectOnly = false;
+            const PRODUCT_NAMES = {products_json};
+            const SKU_LIST = {skus_json};
+
+            function setStatus(status) {{
+                currentStatus = status;
+                applyFilters();
+            }}
+
+            function setProduct(product) {{
+                currentProduct = product;
+                applyFilters();
+            }}
+
+            function setQuery(q) {{
+                currentQuery = (q || '').trim().toLowerCase();
+                const exactProduct = PRODUCT_NAMES.find(p => p.toLowerCase() === currentQuery);
+                if (exactProduct) {{
+                    const sel = document.getElementById('productSelect');
+                    if (sel) sel.value = exactProduct;
+                    setProduct(exactProduct);
+                    return;
+                }}
+                applyFilters();
+            }}
+
+            function updateStats() {{
+                const cards = Array.from(document.querySelectorAll('.card'));
+                const wantAllProducts = !currentProduct || currentProduct === 'ALL';
+                const hasQuery = !!currentQuery;
+
+                let total = 0, normal = 0, anom = 0;
                 cards.forEach(card => {{
-                    if (status === 'ALL' || card.classList.contains(status)) {{
-                        card.style.display = 'block';
-                    }} else {{
-                        card.style.display = 'none';
+                    const p = (card.dataset.product || '').toLowerCase();
+                    const s = (card.dataset.sku || '').toLowerCase();
+                    const cardProductOk = wantAllProducts || p === (currentProduct || '').toLowerCase();
+                    const cardQueryOk = !hasQuery || p.includes(currentQuery) || s.includes(currentQuery);
+                    if (cardProductOk && cardQueryOk) {{
+                        total++;
+                        if (card.classList.contains('NORMAL')) normal++;
+                        else if (card.classList.contains('ANOMALOUS')) anom++;
                     }}
                 }});
+
+                const elT = document.getElementById('countTotal');
+                const elN = document.getElementById('countNormal');
+                const elA = document.getElementById('countAnom');
+                if (elT) elT.textContent = total;
+                if (elN) elN.textContent = normal;
+                if (elA) elA.textContent = anom;
             }}
+
+            function applyFilters() {{
+                const cards = document.querySelectorAll('.card');
+                const wantAllProducts = !currentProduct || currentProduct === 'ALL';
+                const wantAllStatus = !currentStatus || currentStatus === 'ALL';
+                const hasQuery = !!currentQuery;
+                const requireIncorrect = HAS_CORRECT && showIncorrectOnly;
+
+                cards.forEach(card => {{
+                    const cardStatusOk = wantAllStatus || card.classList.contains(currentStatus);
+                    const p = (card.dataset.product || '').toLowerCase();
+                    const s = (card.dataset.sku || '').toLowerCase();
+                    const cardProductOk = wantAllProducts || p === (currentProduct || '').toLowerCase();
+                    const cardQueryOk = !hasQuery || p.includes(currentQuery) || s.includes(currentQuery);
+                    const cardIncorrectOk = !requireIncorrect || (card.dataset.correct === 'false');
+                    card.style.display = (cardStatusOk && cardProductOk && cardQueryOk && cardIncorrectOk) ? 'block' : 'none';
+                }});
+
+                updateStats();
+            }}
+
+            function toggleIncorrectOnly() {{
+                if (!HAS_CORRECT) return;
+                showIncorrectOnly = !showIncorrectOnly;
+                const btn = document.getElementById('incorrectToggle');
+                if (btn) {{
+                    btn.textContent = showIncorrectOnly ? 'Show All Accuracy' : 'Only Incorrect';
+                    btn.classList.toggle('active', showIncorrectOnly);
+                }}
+                applyFilters();
+            }}
+
+            document.addEventListener('DOMContentLoaded', () => {{
+                applyFilters();
+            }});
         </script>
     </head>
     <body>
@@ -164,16 +297,29 @@ def generate_html(crop_mode=False):
         
         <div class="controls">
             <div class="stats">
-                <span style="font-size: 1.2em;">🔍 Results Analysis <span class="mode-badge">{mode_text}</span></span>
-                <span>Total: {total}</span>
-                <span style="color:#28a745;">Normal: {normal_count}</span>
-                <span style="color:#dc3545;">Anomalous: {anomalous_count}</span>
+                <div class="heading">Results Analysis <span class="mode-badge">{mode_text}</span></div>
+                <div class="counts">
+                    <span>Total: <span id="countTotal">{total}</span></span>
+                    <span style="color:#28a745;">Normal: <span id="countNormal">{normal_count}</span></span>
+                    <span style="color:#dc3545;">Anomalous: <span id="countAnom">{anomalous_count}</span></span>
+                </div>
             </div>
-            <div>
-                <button class="btn btn-all" onclick="filterCards('ALL')">Show All</button>
-                <button class="btn btn-norm" onclick="filterCards('NORMAL')">Only Normal</button>
-                <button class="btn btn-anom" onclick="filterCards('ANOMALOUS')">Only Anomalous</button>
+            <div class="filters">
+                <label for="productSelect" style="margin-right:8px; font-weight:600;">Product:</label>
+                <select id="productSelect" onchange="setProduct(this.value)">
+                    {product_options_html}
+                </select>
+                <input type="text" id="searchInput" list="searchOptions" placeholder="Search product or SKU" oninput="setQuery(this.value)" onchange="setQuery(this.value)" style="margin-left:10px; padding:6px 10px; width:320px;" />
+                <datalist id="searchOptions">
+                    {search_options_html}
+                </datalist>
             </div>
+            <div class="btn-group">
+                <button class="btn btn-all" onclick="setStatus('ALL')">Show All</button>
+                <button class="btn btn-norm" onclick="setStatus('NORMAL')">Only Normal</button>
+                <button class="btn btn-anom" onclick="setStatus('ANOMALOUS')">Only Anomalous</button>
+            </div>
+            {incorrect_filter_html}
         </div>
 
         <div class="grid">
@@ -185,8 +331,17 @@ def generate_html(crop_mode=False):
         analysis = html.escape(str(row.get("ai_analysis", "")))
         confidence = row.get("ai_confidence_score", "")
         obs = html.escape(str(row.get("ai_obs", "")))  # Show observations if available
-        product = html.escape(str(row.get("product_name", "Unknown Product")))
-        sku = html.escape(str(row.get("sku", "Unknown SKU")))
+        product_raw = str(row.get("product_name", "Unknown Product"))
+        product = html.escape(product_raw)
+        sku_raw = str(row.get("sku", "Unknown SKU"))
+        sku = html.escape(sku_raw)
+        correctness = row.get("is_correct_norm") if has_correct_col else None
+        if correctness is not None:
+            correctness_str = "true" if correctness else "false"
+            correctness_badge = f'<span class="correct-badge correct-{correctness_str}">{"Correct" if correctness else "Incorrect"}</span>'
+        else:
+            correctness_str = None
+            correctness_badge = ""
         
         # 1. Get Image Sources
         # We NEVER crop reference images (consistent with detection script)
@@ -198,11 +353,18 @@ def generate_html(crop_mode=False):
         ref_display = f'<img src="{ref_src}" loading="lazy">' if ref_src else '<div style="padding:20px; color:#999;">No Reference Image</div>'
         tote_display = f'<img src="{tote_src}" loading="lazy">' if tote_src else '<div style="padding:20px; color:#999;">No Tote Image</div>'
 
+        data_attrs = f'data-product="{html.escape(product_raw)}" data-sku="{html.escape(sku_raw)}"'
+        if correctness_str is not None:
+            data_attrs += f' data-correct="{correctness_str}"'
+
         html_content += f"""
-        <div class="card {status}">
+        <div class=\"card {status}\" {data_attrs}>
             <div class="header">
                 <span class="product-name">{product}</span>
-                <span class="sku-badge">SKU: {sku}</span>
+                <div class="header-right">
+                    <span class="sku-badge">SKU: {sku}</span>
+                    {correctness_badge}
+                </div>
             </div>
             <div class="images">
                 <div class="img-container">

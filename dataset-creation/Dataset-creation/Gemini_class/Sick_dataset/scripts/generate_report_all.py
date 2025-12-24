@@ -24,7 +24,7 @@ from Sick_dataset.utils.crop import robust_industrial_crop
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DATASET_DIR = SCRIPTS_DIR.parent
 CSV_PATH = DATASET_DIR / "manifest_analyzed_all.csv"
-HTML_OUTPUT = DATASET_DIR / "verification_report_all_issue.html"
+HTML_OUTPUT = DATASET_DIR / "reports" / "verification_report_all_issue.html"
 
 def get_image_src(rel_path, do_crop=False):
     """
@@ -41,7 +41,7 @@ def get_image_src(rel_path, do_crop=False):
 
     if not do_crop:
         # Standard mode: just return path for browser to load locally
-        return rel_path
+        return f"../{rel_path}"
 
     # --- CROPPING MODE ---
     if not full_path.exists():

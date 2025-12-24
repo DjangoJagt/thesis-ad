@@ -51,8 +51,7 @@ class ManifestRow(BaseModel):
 
     # Optional metadata
     product_name: Optional[str] = None
-    label: Optional[str] = None      
-    split: Optional[str] = None      
+    GT: Optional[str] = None      # Ground Truth label    
 
     @field_validator("date")
     @classmethod

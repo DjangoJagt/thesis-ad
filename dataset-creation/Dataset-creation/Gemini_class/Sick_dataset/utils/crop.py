@@ -174,7 +174,7 @@ def extract_floor_tiles(cropped_image):
     # Shave off the walls (adjust these % based on your camera angle)
     right_margin = int(w * 0.14)
     left_margin = int(w * 0.04)
-    top_margin = int(h * 0.10)
+    top_margin = int(h * 0.06)
     bottom_margin = int(h * 0.12)
     
     floor_area = cropped_image[top_margin:h-bottom_margin, 
