@@ -23,7 +23,7 @@ from Sick_dataset.utils.crop import (
 ROOT_DIR = Path(__file__).resolve().parent
 SICK_DIR = ROOT_DIR / "Sick_dataset" # Adjust if your folder structure differs
 INPUT_CSV = SICK_DIR / "manifest.csv"
-OUTPUT_CSV = SICK_DIR / "manifest_analyzed_leakage_gpt5-mini.csv"
+OUTPUT_CSV = SICK_DIR / "manifest_analyzed_leakage_gpt5.1.csv"
 
 # --- 1. LOAD .ENV (Crucial for Picnic Auth) ---
 env_file = ROOT_DIR / ".env"
@@ -35,7 +35,7 @@ if env_file.exists():
                 os.environ[key.strip()] = val.strip()
 
 # --- AI CONFIGURATION ---
-MODEL_NAME = "openai/gpt-5-mini" 
+MODEL_NAME = "openai/gpt-5.1" 
 TEMPERATURE = 0.0
 # Limit concurrent requests to avoid Rate Limits & Memory Crashes
 MAX_CONCURRENT_REQUESTS = 5 

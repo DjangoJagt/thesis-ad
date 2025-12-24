@@ -3,9 +3,9 @@ from pathlib import Path
 
 # --- CONFIG ---
 ROOT_DIR = Path(__file__).parent.parent  # Goes up to Sick_dataset/
-csv_input = ROOT_DIR / "manifest_analyzed_leakage_gpt5.1_nozoom.csv"
+csv_input = ROOT_DIR / "manifest_analyzed_leakage_gpt5.1.csv"
 issues_file = ROOT_DIR / "issues.txt"
-csv_output = ROOT_DIR / "manifest_analyzed_gt_leakage_gpt5.1_nozoom.csv"
+csv_output = ROOT_DIR / "manifest_analyzed_gt_leakage_gpt5.1.csv"
 
 def update_gt():
     # 1. Laden van de data
